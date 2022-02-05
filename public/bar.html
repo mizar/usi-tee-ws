@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0" />
+<title>USI-Tee-WS Bar</title>
+<link
+rel="icon"
+href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiPjxwYXRoIGZpbGw9IiNmZDciIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIzMiIgZD0ibTcyIDEwMDIgMTQwLTg4MyAzMDAtOTkgMzAwIDk5IDE0MCA4ODNINzJaIi8+PHBhdGggZD0iTTM0MiA4MDAgMjEyIDQzM2wxNzYgMTE3LTQyLTI0MCAxNjYgMTg0IDE2Ni0xODQtNDIgMjQwIDE3Ni0xMTctMTMwIDM2N2EyNzEgMjcxIDAgMCAwLTM0MCAwWiIvPjwvc3ZnPg=="
+/>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;900&family=Roboto+Mono:wght@400;700;900&family=Rubik:wght@400;900&display=swap" rel="stylesheet" />
+<style>
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font: inherit;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0);
+  }
+
+  #root {
+    font-family: "Rubik", "Noto Sans JP", sans-serif;
+  }
+
+  main {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  main svg {
+    flex: none;
+  }
+
+  #output {
+    flex: 1 1 auto;
+    width: 100%;
+    overflow: hidden;
+    padding: 10px;
+  }
+
+  #opre {
+    width: 100%;
+    height: 100%;
+    overflow: scroll;
+    padding: 10px;
+    border: 1px solid #ddd;
+    box-shadow: inset 1px 1px 2px #eee;
+    font-family: "Roboto Mono", monospace;
+  }
+
+</style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script src="./mithril.min.js"></script>
+  <script>
+    const $ = (...args) => document.querySelector(...args);
+    const App = () => {
+      const { host, protocol } = window.location;
+      const wsProtocol = protocol === "http:" ? "ws://" : "wss://";
+      const address = wsProtocol + host + "/usi.ws";
+
+      const cp2wrate_param = 355;
+      const cp2wrate = (cp) => (1/Math.PI*Math.atan(Math.PI*cp/(4*cp2wrate_param))+0.5);
+      const fmtnodes = (nodes) => {
+        if (nodes < 999.5e0) { return `${nodes}n`; }
+        if (nodes < 999.5e3) { return `${(nodes / 1e3).toPrecision(3)}kn`; }
+        if (nodes < 999.5e6) { return `${(nodes / 1e6).toPrecision(3)}Mn`; }
+        if (nodes < 999.5e9) { return `${(nodes / 1e9).toPrecision(3)}Gn`; }
+        if (nodes < 999.5e12) { return `${(nodes / 1e12).toPrecision(3)}Tn`; }
+        if (nodes < 999.5e15) { return `${(nodes / 1e15).toPrecision(3)}Pn`; }
+        if (nodes < 999.5e18) { return `${(nodes / 1e18).toPrecision(3)}En`; }
+        if (nodes < 999.5e21) { return `${(nodes / 1e21).toPrecision(3)}Zn`; }
+        if (nodes < 999.5e24) { return `${(nodes / 1e24).toPrecision(3)}Yn`; }
+        return `${Math.round(nodes / 1e24)}Yn`;
+      };
+
+      let state = "INIT";
+      let output = "";
+
+      const name_black = "先手";
+      const name_white = "後手";
+      const name_turn = "手番";
+      let name_engine = "";
+      let usi_position = "";
+      let usi_ply = 1;
+      let usi_turnblack = true;
+      let usi_ponder = false;
+      let usi_nodes = null;
+      let usi_depth = null;
+      let usi_seldepth = null;
+      let black_width = 500;
+      let white_width = 500;
+      let text_c1 = name_engine;
+      let text_c2 = "";
+      let text_b0 = "";
+      let text_b1 = "";
+      let text_b2 = "";
+      let text_w0 = "";
+      let text_w1 = "";
+      let text_w2 = "";
+
+      (() => {
+        const urlParam = location.search.substring(1);
+        if (urlParam) {
+          urlParam.split(/[&;]/).forEach((param) => {
+            const [k, v] = param.split('=');
+            if (k === 'engine') { name_engine = decodeURIComponent(v); }
+          });
+        }
+      })();
+
+      (function wsconnect() {
+        const socket = new window.WebSocket(address);
+
+        socket.onmessage = (res)=> {
+          if (typeof res.data === 'string') {
+            if (res.data.startsWith("{")) {
+              try {
+                const obj = JSON.parse(res.data);
+                const cmds = obj.d.split(" ");
+                switch (obj.sender) {
+                  case "cache":
+                  case "ui":
+                    switch(cmds[0]) {
+                      case "position":
+                        output = "";
+                        if (cmds[1] === 'startpos') {
+                          usi_ply = 1;
+                          usi_turnblack = true;
+                          for (let i = 2; i < cmds.length; i++) {
+                            if (`${cmds[i]}`.match(/^(pass|0000|[1-9][a-i][1-9][a-i]\+?|[RBGSNLP]\*[1-9][a-i])$/)) {
+                              usi_ply++;
+                              usi_turnblack = !usi_turnblack;
+                            }
+                          }
+                        } else if (cmds[1] === 'sfen') {
+                          usi_turnblack = (cmds[3] === 'b');
+                          usi_ply = parseInt(cmds[5]);
+                          for (let i = 6; i < cmds.length; i++) {
+                            if (`${cmds[i]}`.match(/^(pass|0000|[1-9][a-i][1-9][a-i]\+?|[RBGSNLP]\*[1-9][a-i])$/)) {
+                              usi_ply++;
+                              usi_turnblack = !usi_turnblack;
+                            }
+                          }
+                        }
+                        usi_position = obj.d;
+                        text_c1 = usi_ply > 1 ? `${name_engine} ply${usi_ply}` : name_engine;
+                        text_c2 = "";
+                        text_b0 = usi_turnblack ? name_turn : "";
+                        text_b1 = name_black;
+                        text_b2 = "";
+                        text_w0 = usi_turnblack ? "" : name_turn;
+                        text_w1 = name_white;
+                        text_w2 = "";
+                        break;
+                      case "go":
+                        if (cmds[1] === 'ponder') {
+                          usi_ply--;
+                          usi_turnblack = !usi_turnblack;
+                          usi_ponder = true;
+                        } else {
+                          usi_ponder = false;
+                        }
+                        text_c1 = usi_ply > 1 ? `${name_engine} ply${usi_ply}` : name_engine;
+                        text_b0 = usi_turnblack ? name_turn : "";
+                        text_w0 = usi_turnblack ? "" : name_turn;
+                        break;
+                      case "ponderhit":
+                        usi_ply++;
+                        usi_turnblack = !usi_turnblack;
+                        usi_ponder = false;
+                        text_c1 = usi_ply > 1 ? `${name_engine} ply${usi_ply}` : name_engine;
+                        text_b0 = usi_turnblack ? name_turn : "";
+                        text_w0 = usi_turnblack ? "" : name_turn;
+                        break;
+                      case "isready":
+                      case "usinewgame":
+                        usi_position = "";
+                        usi_ply = 1;
+                        usi_turnblack = true;
+                        black_width = 500;
+                        white_width = 500;
+                        text_c1 = name_engine;
+                        text_c2 = "";
+                        text_b0 = usi_turnblack ? name_turn : "";
+                        text_b1 = name_black;
+                        text_b2 = "";
+                        text_w0 = usi_turnblack ? "" : name_turn;
+                        text_w1 = name_white;
+                        text_w2 = "";
+                        break;
+                      case "gameover":
+                        break;
+                    }
+                    output += `>> ${obj.d}\n`;
+                    m.redraw();
+                    break;
+                  case "engine":
+                    output += `${obj.d}\n`;
+                    // Limit output to 100kB.
+                    if (output.length > 1e5) { output = output.substring(output.indexOf("\n", output.length - 1e5) + 1);  }
+                    switch(cmds[0]) {
+                      case "info":
+                        let isscore = false;
+                        let infoobj = {};
+                        for (let i = 1; i < cmds.length; i++) {
+                          switch(cmds[i]) {
+                            // skip "pv" and "string"
+                            case "pv":
+                            case "string":
+                              i = cmds.length;
+                              break;
+                            // skip all except "multipv 1"
+                            case "multipv":
+                              if (cmds[i + 1] !== "1") {
+                                i = cmds.length;
+                                isscore = false;
+                                infoobj = {};
+                              }
+                              i++;
+                              break;
+                            case "depth":
+                              infoobj.depth = cmds[i + 1];
+                              i++;
+                              break;
+                            case "seldepth":
+                              infoobj.seldepth = cmds[i + 1];
+                              i++;
+                              break;
+                            case "nodes":
+                              infoobj.nodes = cmds[i + 1];
+                              i++;
+                              break;
+                            case "nps":
+                              infoobj.nps = cmds[i + 1];
+                              i++;
+                              break;
+                            case "hashfull":
+                              infoobj.hashfull = cmds[i + 1];
+                              i++;
+                              break;
+                            case "time":
+                              infoobj.time = cmds[i + 1];
+                              i++;
+                              break;
+                            case "score":
+                              let p_turnblack = (usi_turnblack !== usi_ponder);
+                              if (cmds[i + 1] === "cp") {
+                                isscore = true;
+                                let s_cp = parseInt(cmds[i + 2]);
+                                let s_wrate = cp2wrate(s_cp);
+                                let i_wrate = cp2wrate(-s_cp);
+                                let s_bound = cmds[i + 3];
+                                if (p_turnblack) {
+                                  infoobj.width = [Math.round(s_wrate * 1000), Math.round(i_wrate * 1000)];
+                                  infoobj.text1 = [`${name_black} ${Math.round(s_wrate * 100)}%`, `${Math.round(i_wrate * 100)}% ${name_white}`];
+                                  infoobj.text2 = [`${s_cp < 0 ? "" : "+"}${s_cp}`, `${s_cp > 0 ? "" : "+"}${-s_cp}`];
+                                } else {
+                                  infoobj.width = [Math.round(i_wrate * 1000), Math.round(s_wrate * 1000)];
+                                  infoobj.text1 = [`${name_black} ${Math.round(i_wrate * 100)}%`, `${Math.round(s_wrate * 100)}% ${name_white}`];
+                                  infoobj.text2 = [`${s_cp > 0 ? "" : "+"}${-s_cp}`, `${s_cp < 0 ? "" : "+"}${s_cp}`];
+                                }
+                              } else if (cmds[i + 1] === "mate") {
+                                isscore = true;
+                                if (cmds[i + 2] === "+" || cmds[i + 2] === "-") {
+                                  if ((cmds[i + 2] === "+") === p_turnblack) {
+                                    infoobj.width = [1000, 0];
+                                    infoobj.text1 = [`${name_black} 100%`, `0% ${name_white}`];
+                                    infoobj.text2 = ["+M", "-M"];
+                                  } else {
+                                    infoobj.width = [0, 1000];
+                                    infoobj.text1 = [`${name_black} 0%`, `100% ${name_white}`];
+                                    infoobj.text2 = ["-M", "+M"];
+                                  }
+                                } else {
+                                  const mateply = parseInt(cmds[i + 2]);
+                                  if (mateply === 0 || isNaN(mateply)) {
+                                    infoobj.text1 = [name_black, name_white];
+                                    infoobj.text2 = ["", ""];
+                                  } else if (p_turnblack === (mateply > 0)) {
+                                    infoobj.width = [1000, 0];
+                                    infoobj.text1 = [`${name_black} 100%`, `0% ${name_white}`];
+                                    infoobj.text2 = [`+M${Math.abs(mateply)}`, `-M${Math.abs(mateply)}`];
+                                  } else {
+                                    infoobj.width = [0, 1000];
+                                    infoobj.text1 = [`${name_black} 0%`, `100% ${name_white}`];
+                                    infoobj.text2 = [`-M${Math.abs(mateply)}`, `+M${Math.abs(mateply)}`];
+                                  }
+                                }
+                              }
+                              i += 2;
+                              break;
+                          }
+                        }
+                        if (infoobj.width) {
+                          black_width = infoobj.width[0];
+                          white_width = infoobj.width[1];
+                        }
+                        if (infoobj.text1) {
+                          text_b1 = infoobj.text1[0];
+                          text_w1 = infoobj.text1[1];
+                        }
+                        if (infoobj.text2) {
+                          text_b2 = infoobj.text2[0];
+                          text_w2 = infoobj.text2[1];
+                        }
+                        if (infoobj.depth) {
+                          if (infoobj.seldepth) {
+                            text_c2 = `depth${infoobj.depth}/${infoobj.seldepth} ${fmtnodes(infoobj.nodes)}`;
+                          } else {
+                            text_c2 = `depth${infoobj.depth} ${fmtnodes(infoobj.nodes)}`;
+                          }
+                        }
+                        if (isscore) {
+                          m.redraw();
+                        }
+                        break;
+                    }
+                    break;
+                }
+              } catch(e) {
+                console.error(e);
+              }
+            } else {
+              console.log(`## ${res.data}\n`);
+            }
+            m.redraw();
+          }
+        };
+
+        socket.onopen = () => {
+          state = "CONNECTED";
+          output = `# ${new Date()} : websocket is connected.\n`;
+          text_c1 = name_engine;
+          text_c2 = "";
+          text_b0 = usi_turnblack ? name_turn : "";
+          text_b1 = name_black;
+          text_b2 = "";
+          text_w0 = usi_turnblack ? "" : name_turn;
+          text_w1 = name_white;
+          text_w2 = "";
+          m.redraw();
+        }
+
+        socket.onclose = (e) => {
+          state = "DISCONNECTED";
+          output += `# ${new Date()} : websocket is closed. reconnect...\n`;
+          if (e.reason) { output += `! ${e.reason}\n`; }
+          m.redraw();
+          setTimeout(() => {
+            wsconnect();
+          }, 3000);
+        };
+
+        socket.onerror = (e) => {
+          state = "ERROR";
+          if (e.message) { output += `! ${e.message}\n`; }
+          m.redraw();
+          socket.close();
+        };
+
+      })();
+
+      const scrollOutput = () => {
+        $("#opre").scrollTo({
+          top: $("#opre").scrollHeight,
+          behavior: "smooth",
+        });
+      };
+
+      const oninit = () => {
+        state = "INIT";
+      };
+
+      const view = () => {
+        return m("main", [
+          m("svg", {
+            width: "880px",
+            height: "96px",
+            viewBox: "-440 -48 880 96",
+            version: "1.1",
+            xmlns: "http://www.w3.org/2000/svg",
+            "xmlns:svg": "http://www.w3.org/2000/svg",
+          }, [
+            m("svg:rect", {
+              width: black_width,
+              height: "52",
+              style: "stroke-width:0;fill:#55f;",
+              transform: "matrix(0.8,0,0,1,-400,-26)",
+            }),
+            m("svg:rect", {
+              width: white_width,
+              height: "52",
+              style: "stroke-width:0;fill:#f55;",
+              transform: "matrix(-0.8,0,0,1,400,-26)",
+            }),
+            m("svg:g", {
+              style: "font-style:normal;font-weight:900;font-size:26px;line-height:1;font-family:'Rubik','Noto Sans JP',sans-serif;letter-spacing:0;word-spacing:0;fill-opacity:1;dominant-baseline:central;",
+            }, [
+              m("svg:text", {
+                style: "stroke:#000;fill:#fff;stroke-width:1.5;text-align:center;text-anchor:middle;",
+              }, [
+                m("svg:tspan", { x: "0", y: "-16" }, text_c1),
+                m("svg:tspan", { x: "0", y: "13" }, text_c2),
+              ]),
+              m("svg:text", {
+                transform: "matrix(0,-1,1,0,-418,0)",
+                style: "stroke:#fff;fill:#008;stroke-width:1.2;text-align:center;text-anchor:middle;",
+              }, text_b0),
+              m("svg:text", {
+                transform: "matrix(0,1,-1,0,418,0)",
+                style: "stroke:#fff;fill:#800;stroke-width:1.2;text-align:center;text-anchor:middle;",
+              }, text_w0),
+              m("svg:text", {
+                style: "stroke:#fff;fill:#008;stroke-width:1.2;text-align:left;text-anchor:start;",
+              }, [
+                m("svg:tspan", { x: "-380", y: "-13" }, text_b1),
+                m("svg:tspan", { x: "-380", y: "13" }, text_b2),
+              ]),
+              m("svg:text", {
+                style: "stroke:#fff;fill:#800;stroke-width:1.2;text-align:right;text-anchor:end;",
+              }, [
+                m("svg:tspan", { x: "380", y: "-13" }, text_w1),
+                m("svg:tspan", { x: "380", y: "13" }, text_w2),
+              ]),
+            ]),
+          ]),
+          m("div#output", { onupdate: scrollOutput }, m("pre#opre", output)),
+        ])
+      };
+
+      return { oninit, view };
+    };
+  m.mount($("#root"), App);
+
+  </script>
+</body>
+</html>

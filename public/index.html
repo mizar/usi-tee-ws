@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0" />
+<title>USI-Tee-WS</title>
+<link
+rel="icon"
+href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiPjxwYXRoIGZpbGw9IiNmZDciIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIzMiIgZD0ibTcyIDEwMDIgMTQwLTg4MyAzMDAtOTkgMzAwIDk5IDE0MCA4ODNINzJaIi8+PHBhdGggZD0iTTM0MiA4MDAgMjEyIDQzM2wxNzYgMTE3LTQyLTI0MCAxNjYgMTg0IDE2Ni0xODQtNDIgMjQwIDE3Ni0xMTctMTMwIDM2N2EyNzEgMjcxIDAgMCAwLTM0MCAwWiIvPjwvc3ZnPg=="
+/>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&family=Roboto+Mono&display=swap" rel="stylesheet" />
+<style>
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font: inherit;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  #root {
+    font-family: "Roboto Mono", "Noto Sans JP";
+  }
+
+  main {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+  }
+
+  #output {
+    flex: 1 1 auto;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  #opre {
+    width: 100%;
+    height: 100%;
+    overflow: scroll;
+    padding: 10px;
+    border: 1px solid #ddd;
+    box-shadow: inset 1px 1px 2px #eee;
+  }
+
+</style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script src="https://cdn.jsdelivr.net/npm/mithril@2.0.4/mithril.min.js"></script>
+  <script>
+    const $ = (...args) => document.querySelector(...args);
+    const App = () => {
+      const { host, protocol } = window.location;
+      const wsProtocol = protocol === "http:" ? "ws://" : "wss://";
+      const address = wsProtocol + host + "/usi.ws";
+
+      let state = "INIT";
+      let output = "";
+
+      (function wsconnect() {
+        const socket = new window.WebSocket(address);
+
+        socket.onmessage = (res)=> {
+          if (typeof res.data === 'string') {
+            if (res.data.startsWith("{")) {
+              const obj = JSON.parse(res.data);
+              switch (obj.sender) {
+                case "cache":  output += `>>> ${obj.d}\n`; break;
+                case "ui":     output +=  `>> ${obj.d}\n`; break;
+                case "engine": output +=     `${obj.d}\n`; break;
+              }
+            } else {
+              output += `## ${res.data}\n`;
+            }
+            m.redraw();
+          }
+        };
+
+        socket.onopen = () => {
+          state = "CONNECTED";
+          m.redraw();
+        }
+
+        socket.onclose = (e) => {
+          state = "DISCONNECTED";
+          output += `# websocket is closed. reconnect...\n`;
+          if (e.reason) { output += `! ${e.reason}\n`; }
+          m.redraw();
+          setTimeout(() => {
+            wsconnect();
+          }, 3000);
+        };
+
+        socket.onerror = (e) => {
+          state = "ERROR";
+          if (e.message) { output += `! ${e.message}\n`; }
+          m.redraw();
+          socket.close();
+        };
+
+      })();
+
+      const scrollOutput = () => {
+        $("#opre").scrollTo({
+          top: $("#opre").scrollHeight,
+          behavior: "smooth",
+        });
+      };
+
+      const oninit = () => {
+        state = "INIT";
+      };
+
+      const view = () => {
+        return m("main", [
+          m("div#output", { onupdate: scrollOutput }, m("pre#opre", output)),
+        ])
+      };
+
+      return { oninit, view };
+    };
+  m.mount($("#root"), App);
+
+  </script>
+</body>
+</html>

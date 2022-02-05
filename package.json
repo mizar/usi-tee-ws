@@ -1,0 +1,18 @@
+{
+  "name": "usi-tee-ws",
+  "version": "0.1.0",
+  "description": "Universal Shogi Interface Protocol teeing into HTTP/WebSockets",
+  "main": "server.js",
+  "author": "Mizar",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "@mizarjp/yaneuraou.halfkp": "latest",
+    "@mizarjp/yaneuraou.k-p": "latest",
+    "argparse": "^2.0.1",
+    "express": "^4.17.2",
+    "express-static-gzip": "^2.1.1",
+    "express-ws": "^5.0.2",
+    "mithril": "^2.0.4"
+  }
+}
