@@ -132,9 +132,20 @@ rl_subp.on("line", (line) => {
   for (const ws of wsConnects) {
     ws.send(JSON.stringify({ sender: "engine", d: line }));
   }
-  if (line.startsWith("info") && line.includes("score")) {
+  if (line.startsWith("info")) {
     const found = line.match(/multipv (?<multipv>[0-9]+) /);
-    usie_info[found ? parseInt(found.groups.multipv) : 0] = line;
+    if (found) {
+      usie_info[parseInt(found.groups.multipv)] = line;
+    } else {
+      let trline = line;
+      const istring = line.indexOf("string");
+      if (istring >= 0) {
+        trline = line.substring(0, istring);
+      }
+      if (trline.includes("score") || trline.includes("pv")) {
+        usie_info[0] = line;
+      }
+    }
   }
   if (line.startsWith("bestmove")) { usie_info = []; }
 });
