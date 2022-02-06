@@ -31,6 +31,7 @@ const POS_HIRATE = "position startpos";
 let usi_position = POS_HIRATE;
 let usi_go = null;
 let usi_ponderhit = null;
+let usie_info = [];
 
 // http/ws server
 
@@ -83,6 +84,13 @@ app.ws("/usi.ws", (ws, _req) => {
       ws.send(JSON.stringify({ sender: "cache", d: usi_ponderhit }));
     }
   }
+  if (usie_info.length) {
+    for (let i = 0; i < usie_info.length; i++) {
+      if (usie_info[i]) {
+        ws.send(JSON.stringify({ sender: "cachee", d: usie_info[i] }));
+      }
+    }
+  }
 });
 const server = app.listen(args.port, () => {
   console.log(`http://localhost:${args.port}/`);
@@ -112,13 +120,23 @@ rl_main.on("line", (line) => {
   if (line.startsWith("position")) { usi_position = line; usi_go = null; usi_ponderhit = null; }
   if (line.startsWith("go")) { usi_go = line; usi_ponderhit = null; }
   if (line.startsWith("ponderhit")) { usi_ponderhit = line; }
-  if (line.startsWith("isready")) { usi_position = POS_HIRATE; usi_go = null; usi_ponderhit = null; }
+  if (line.startsWith("isready")) {
+    usi_position = POS_HIRATE;
+    usi_go = null;
+    usi_ponderhit = null;
+    usie_info = [];
+  }
 });
 rl_subp.on("line", (line) => {
   process.stdout.write(line + "\n");
   for (const ws of wsConnects) {
     ws.send(JSON.stringify({ sender: "engine", d: line }));
   }
+  if (line.startsWith("info") && line.includes("score")) {
+    const found = line.match(/multipv (?<multipv>[0-9]+) /);
+    usie_info[found ? parseInt(found.groups.multipv) : 0] = line;
+  }
+  if (line.startsWith("bestmove")) { usie_info = []; }
 });
 
 // When the pipe is closed, terminate the server, sub-process, and current process.

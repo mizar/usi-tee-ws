@@ -206,10 +206,13 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
                       case "gameover":
                         break;
                     }
+                    if (obj.sender === 'cache') { output += "#"; }
                     output += `>> ${obj.d}\n`;
                     m.redraw();
                     break;
+                  case "cachee":
                   case "engine":
+                    if (obj.sender === 'cachee') { output += "# "; }
                     output += `${obj.d}\n`;
                     // Limit output to 100kB.
                     if (output.length > 1e5) { output = output.substring(output.indexOf("\n", output.length - 1e5) + 1);  }

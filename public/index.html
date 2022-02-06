@@ -78,8 +78,9 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
             if (res.data.startsWith("{")) {
               const obj = JSON.parse(res.data);
               switch (obj.sender) {
-                case "cache":  output += `>>> ${obj.d}\n`; break;
+                case "cache":  output += `#>> ${obj.d}\n`; break;
                 case "ui":     output +=  `>> ${obj.d}\n`; break;
+                case "cachee": output +=   `# ${obj.d}\n`; break;
                 case "engine": output +=     `${obj.d}\n`; break;
               }
             } else {
