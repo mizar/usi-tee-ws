@@ -10,7 +10,7 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
 />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;900&family=Roboto+Mono:wght@400;700;900&family=Rubik:wght@400;900&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&family=Roboto+Mono&family=Rubik:wght@900&family=Dela+Gothic+One&display=swap" rel="stylesheet" />
 <style>
   *,
   *::before,
@@ -168,11 +168,11 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
                         text_c1 = usi_ply > 1 ? `${name_engine} ply${usi_ply}` : name_engine;
                         text_c2 = "";
                         text_b0 = usi_turnblack ? name_turn : "";
-                        text_b1 = name_black;
-                        text_b2 = "";
+                        text_b1 = "";
+                        text_b2 = name_black;
                         text_w0 = usi_turnblack ? "" : name_turn;
-                        text_w1 = name_white;
-                        text_w2 = "";
+                        text_w1 = "";
+                        text_w2 = name_white;
                         break;
                       case "go":
                         if (cmds[1] === 'ponder') {
@@ -204,11 +204,11 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
                         text_c1 = name_engine;
                         text_c2 = "";
                         text_b0 = usi_turnblack ? name_turn : "";
-                        text_b1 = name_black;
-                        text_b2 = "";
+                        text_b1 = "";
+                        text_b2 = name_black;
                         text_w0 = usi_turnblack ? "" : name_turn;
-                        text_w1 = name_white;
-                        text_w2 = "";
+                        text_w1 = "";
+                        text_w2 = name_white;
                         break;
                       case "gameover":
                         break;
@@ -277,24 +277,24 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
                                 let s_bound = cmds[i + 3];
                                 if (p_turnblack) {
                                   infoobj.width = [Math.round(s_wrate * 1000), Math.round(i_wrate * 1000)];
-                                  infoobj.text1 = [`${name_black} ${Math.round(s_wrate * 100)}%`, `${Math.round(i_wrate * 100)}% ${name_white}`];
-                                  infoobj.text2 = [`${s_cp < 0 ? "" : "+"}${s_cp}`, `${s_cp > 0 ? "" : "+"}${-s_cp}`];
+                                  infoobj.text1 = [`${Math.round(s_wrate * 100)}%`, `${Math.round(i_wrate * 100)}%`];
+                                  infoobj.text2 = [`${name_black} ${s_cp < 0 ? "" : "+"}${s_cp}`, `${s_cp > 0 ? "" : "+"}${-s_cp} ${name_white}`];
                                 } else {
                                   infoobj.width = [Math.round(i_wrate * 1000), Math.round(s_wrate * 1000)];
-                                  infoobj.text1 = [`${name_black} ${Math.round(i_wrate * 100)}%`, `${Math.round(s_wrate * 100)}% ${name_white}`];
-                                  infoobj.text2 = [`${s_cp > 0 ? "" : "+"}${-s_cp}`, `${s_cp < 0 ? "" : "+"}${s_cp}`];
+                                  infoobj.text1 = [`${Math.round(i_wrate * 100)}%`, `${Math.round(s_wrate * 100)}%`];
+                                  infoobj.text2 = [`${name_black} ${s_cp > 0 ? "" : "+"}${-s_cp}`, `${s_cp < 0 ? "" : "+"}${s_cp} ${name_white}`];
                                 }
                               } else if (cmds[i + 1] === "mate") {
                                 isscore = true;
                                 if (cmds[i + 2] === "+" || cmds[i + 2] === "-") {
                                   if ((cmds[i + 2] === "+") === p_turnblack) {
                                     infoobj.width = [1000, 0];
-                                    infoobj.text1 = [`${name_black} 100%`, `0% ${name_white}`];
-                                    infoobj.text2 = ["+M", "-M"];
+                                    infoobj.text1 = [`100%`, `0%`];
+                                    infoobj.text2 = [`${name_black} +M`, `-M ${name_white}`];
                                   } else {
                                     infoobj.width = [0, 1000];
-                                    infoobj.text1 = [`${name_black} 0%`, `100% ${name_white}`];
-                                    infoobj.text2 = ["-M", "+M"];
+                                    infoobj.text1 = [`0%`, `100%`];
+                                    infoobj.text2 = [`${name_black} -M`, `+M ${name_white}`];
                                   }
                                 } else {
                                   const mateply = parseInt(cmds[i + 2]);
@@ -303,12 +303,12 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
                                     infoobj.text2 = ["", ""];
                                   } else if (p_turnblack === (mateply > 0)) {
                                     infoobj.width = [1000, 0];
-                                    infoobj.text1 = [`${name_black} 100%`, `0% ${name_white}`];
-                                    infoobj.text2 = [`+M${Math.abs(mateply)}`, `-M${Math.abs(mateply)}`];
+                                    infoobj.text1 = [`100%`, `0%`];
+                                    infoobj.text2 = [`${name_black} +M${Math.abs(mateply)}`, `-M${Math.abs(mateply)} ${name_white}`];
                                   } else {
                                     infoobj.width = [0, 1000];
-                                    infoobj.text1 = [`${name_black} 0%`, `100% ${name_white}`];
-                                    infoobj.text2 = [`-M${Math.abs(mateply)}`, `+M${Math.abs(mateply)}`];
+                                    infoobj.text1 = [`0%`, `100%`];
+                                    infoobj.text2 = [`${name_black} -M${Math.abs(mateply)}`, `+M${Math.abs(mateply)} ${name_white}`];
                                   }
                                 }
                               }
@@ -358,11 +358,11 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
           text_c1 = name_engine;
           text_c2 = "";
           text_b0 = usi_turnblack ? name_turn : "";
-          text_b1 = name_black;
-          text_b2 = "";
+          text_b1 = "";
+          text_b2 = name_black;
           text_w0 = usi_turnblack ? "" : name_turn;
-          text_w1 = name_white;
-          text_w2 = "";
+          text_w1 = "";
+          text_w2 = name_white;
           m.redraw();
         }
 
@@ -407,24 +407,30 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
             "xmlns:svg": "http://www.w3.org/2000/svg",
           }, [
             m("svg:rect", {
+              width: "1000",
+              height: "52",
+              style: "stroke-width:5;stroke:#000;fill:none;",
+              transform: "matrix(0.8,0,0,1,-400,-26)",
+            }),
+            m("svg:rect", {
               width: black_width,
               height: "52",
-              style: "stroke-width:0;fill:#55f;",
+              style: "stroke-width:0;fill:#66f;",
               transform: "matrix(0.8,0,0,1,-400,-26)",
             }),
             m("svg:rect", {
               width: white_width,
               height: "52",
-              style: "stroke-width:0;fill:#f55;",
+              style: "stroke-width:0;fill:#f66;",
               transform: "matrix(-0.8,0,0,1,400,-26)",
             }),
             m("svg:g", {
-              style: "font-style:normal;font-weight:900;font-size:26px;line-height:1;font-family:'Rubik','Noto Sans JP',sans-serif;letter-spacing:0;word-spacing:0;fill-opacity:1;dominant-baseline:central;",
+              style: "font-style:normal;font-weight:400;font-size:26px;line-height:1;font-family:'Rubik','Dela Gothic One',sans-serif;letter-spacing:0;word-spacing:0;fill-opacity:1;dominant-baseline:central;",
             }, [
               m("svg:text", {
                 style: "stroke:#000;fill:#fff;stroke-width:1.5;text-align:center;text-anchor:middle;",
               }, [
-                m("svg:tspan", { x: "0", y: "-16" }, text_c1),
+                m("svg:tspan", { x: "0", y: "-13" }, text_c1),
                 m("svg:tspan", { x: "0", y: "13" }, text_c2),
               ]),
               m("svg:text", {
