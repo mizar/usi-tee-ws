@@ -73,8 +73,15 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
       const wsProtocol = protocol === "http:" ? "ws://" : "wss://";
       const address = wsProtocol + host + "/usi.ws";
 
-      const cp2wrate_param = 355;
-      const cp2wrate = (cp) => (1/Math.PI*Math.atan(Math.PI*cp/(4*cp2wrate_param))+0.5);
+      // 評価値→勝率変換: 連盟モバイル棋譜中継風 シグモイド関数(係数=1200)
+      const cp2wrate = (cp) => { const param = 1200; return (1/(1+Math.exp(-cp/param))); };
+
+      // 評価値→勝率変換: Ponanza風 シグモイド関数(係数=600)
+      // const cp2wrate = (cp) => { const param = 600; return (1/(1+Math.exp(-cp/param))); };
+
+      // 評価値→勝率変換: 名人戦/A級順位戦勝率分布近似 逆正接関数(係数=355)
+      // const cp2wrate = (cp) => { const param = 355; return (1/Math.PI*Math.atan(Math.PI*cp/(4*param))+0.5); };
+
       const fmtnodes = (nodes) => {
         if (nodes < 999.5e0) { return `${nodes}n`; }
         if (nodes < 999.5e3) { return `${(nodes / 1e3).toPrecision(3)}kn`; }
