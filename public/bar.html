@@ -132,6 +132,11 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
       let text_w1 = "";
       let text_w2 = "";
 
+      const omitoutput = () => {
+        // Omit output to 100kB.
+        if (output.length > 1e5) { output = output.substring(output.indexOf("\n", output.length - 1e5) + 1);  }
+      };
+
       (function wsconnect() {
         const socket = new window.WebSocket(address);
 
@@ -146,7 +151,6 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
                   case "ui":
                     switch(cmds[0]) {
                       case "position":
-                        output = "";
                         if (cmds[1] === 'startpos') {
                           usi_ply = 1;
                           usi_turnblack = true;
@@ -215,6 +219,7 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
                       case "gameover":
                         break;
                     }
+                    omitoutput();
                     if (obj.sender === 'cache') { output += "#"; }
                     output += `>> ${obj.d}\n`;
                     m.redraw();
@@ -222,9 +227,8 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
                   case "cachee":
                   case "engine":
                     if (obj.sender === 'cachee') { output += "# "; }
+                    omitoutput();
                     output += `${obj.d}\n`;
-                    // Limit output to 100kB.
-                    if (output.length > 1e5) { output = output.substring(output.indexOf("\n", output.length - 1e5) + 1);  }
                     switch(cmds[0]) {
                       case "info":
                         let isscore = false;
@@ -356,7 +360,8 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
 
         socket.onopen = () => {
           state = "CONNECTED";
-          output = `# ${new Date()} : websocket is connected.\n`;
+          omitoutput();
+          output += `## ${new Date()} : websocket is connected.\n`;
           text_c1 = name_engine;
           text_c2 = "";
           text_b0 = usi_turnblack ? name_turn : "";
@@ -370,7 +375,8 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
 
         socket.onclose = (e) => {
           state = "DISCONNECTED";
-          output += `# ${new Date()} : websocket is closed. reconnect...\n`;
+          omitoutput();
+          output += `## ${new Date()} : websocket is closed. reconnect...\n`;
           if (e.reason) { output += `! ${e.reason}\n`; }
           m.redraw();
           setTimeout(() => {
