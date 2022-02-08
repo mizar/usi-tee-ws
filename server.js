@@ -69,7 +69,7 @@ app.ws("/usi.ws", (ws, _req) => {
   ws.on("message", (message) => {
     switch (message.toString()) {
       case "hello":
-        ws.send("hello from server!");
+        // ws.send("hello from server!");
         break;
     }
   });
@@ -77,18 +77,27 @@ app.ws("/usi.ws", (ws, _req) => {
     console.log("ws close detected");
     wsConnects = wsConnects.filter(conn => (conn !== ws));
   });
-  ws.send(JSON.stringify({ sender: "cache", d: usi_position }));
-  if (usi_go) {
-    ws.send(JSON.stringify({ sender: "cache", d: usi_go }));
-    if (usi_ponderhit) {
-      ws.send(JSON.stringify({ sender: "cache", d: usi_ponderhit }));
-    }
-  }
-  if (usie_info.length) {
-    for (let i = 0; i < usie_info.length; i++) {
-      if (usie_info[i]) {
-        ws.send(JSON.stringify({ sender: "cachee", d: usie_info[i] }));
+  try {
+    if (ws.readyState === ws.OPEN) {
+      ws.send(JSON.stringify({ sender: "cache", d: usi_position }));
+      if (usi_go) {
+        ws.send(JSON.stringify({ sender: "cache", d: usi_go }));
+        if (usi_ponderhit) {
+          ws.send(JSON.stringify({ sender: "cache", d: usi_ponderhit }));
+        }
       }
+      for (let i = 0; i < usie_info.length; i++) {
+        if (usie_info[i]) {
+          ws.send(JSON.stringify({ sender: "cachee", d: usie_info[i] }));
+        }
+      }
+    }
+  } catch (e) {
+    console.error(e);
+    try {
+      ws.close();
+    } catch (e) {
+      console.error(e);
     }
   }
 });
@@ -115,7 +124,18 @@ const rl_subp = createInterface({ input: subproc.stdout });
 rl_main.on("line", (line) => {
   subproc.stdin.write(line + "\n");
   for (const ws of wsConnects) {
-    ws.send(JSON.stringify({ sender: "ui", d: line }));
+    try {
+      if (ws.readyState === ws.OPEN) {
+        ws.send(JSON.stringify({ sender: "ui", d: line }));
+      }
+    } catch (e) {
+      console.error(e);
+      try {
+        ws.close();
+      } catch (e) {
+        console.error(e);
+      }
+    }
   }
   if (line.startsWith("position")) { usi_position = line; usi_go = null; usi_ponderhit = null; }
   if (line.startsWith("go")) { usi_go = line; usi_ponderhit = null; }
@@ -130,7 +150,18 @@ rl_main.on("line", (line) => {
 rl_subp.on("line", (line) => {
   process.stdout.write(line + "\n");
   for (const ws of wsConnects) {
-    ws.send(JSON.stringify({ sender: "engine", d: line }));
+    try {
+      if (ws.readyState === ws.OPEN) {
+        ws.send(JSON.stringify({ sender: "engine", d: line }));
+      }
+    } catch (e) {
+      console.error(e);
+      try {
+        ws.close();
+      } catch (e) {
+        console.error(e);
+      }
+    }
   }
   if (line.startsWith("info")) {
     const found = line.match(/multipv (?<multipv>[0-9]+) /);
