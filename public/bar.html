@@ -68,19 +68,30 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
   <script src="./mithril.min.js"></script>
   <script>
     const $ = (...args) => document.querySelector(...args);
+    const searchParam = (() => {
+      const obj = {};
+      for (const param of location.search.substring(1).split(/[&;]/)) {
+        const [k, v] = param.split('=');
+        obj[k] = v ? decodeURIComponent(v) : true;
+      }
+      return obj;
+    })();
     const App = () => {
       const { host, protocol } = window.location;
       const wsProtocol = protocol === "http:" ? "ws://" : "wss://";
       const address = wsProtocol + host + "/usi.ws";
 
       // 評価値→勝率変換: 連盟モバイル棋譜中継風 シグモイド関数(係数=1200)
-      const cp2wrate = (cp) => { const param = 1200; return (1/(1+Math.exp(-cp/param))); };
-
-      // 評価値→勝率変換: Ponanza風 シグモイド関数(係数=600)
-      // const cp2wrate = (cp) => { const param = 600; return (1/(1+Math.exp(-cp/param))); };
-
-      // 評価値→勝率変換: 名人戦/A級順位戦勝率分布近似 逆正接関数(係数=355)
-      // const cp2wrate = (cp) => { const param = 355; return (1/Math.PI*Math.atan(Math.PI*cp/(4*param))+0.5); };
+      const cp2wrate = (cp) => {
+        const coef = searchParam.coef ? parseInt(searchParam.coef) : 1200;
+        switch (searchParam.wfn) {
+          case 'atan': // 逆正接関数 (wfn=atan&coef=355)
+            return (1/Math.PI*Math.atan(Math.PI*cp/(4*coef))+0.5);
+          case 'sigmoid': // シグモイド関数 (wfn=sigmoid&coed=1200)
+          default:
+            return (1/(1+Math.exp(-cp/coef)));
+        }
+      };
 
       const fmtnodes = (nodes) => {
         if (nodes < 999.5e0) { return `${nodes}n`; }
@@ -101,7 +112,7 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
       const name_black = "先手";
       const name_white = "後手";
       const name_turn = "手番";
-      let name_engine = "";
+      let name_engine = searchParam.engine ? searchParam.engine : "";
       let usi_position = "";
       let usi_ply = 1;
       let usi_turnblack = true;
@@ -119,16 +130,6 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
       let text_w0 = "";
       let text_w1 = "";
       let text_w2 = "";
-
-      (() => {
-        const urlParam = location.search.substring(1);
-        if (urlParam) {
-          urlParam.split(/[&;]/).forEach((param) => {
-            const [k, v] = param.split('=');
-            if (k === 'engine') { name_engine = decodeURIComponent(v); }
-          });
-        }
-      })();
 
       (function wsconnect() {
         const socket = new window.WebSocket(address);
@@ -268,7 +269,7 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
                               i++;
                               break;
                             case "score":
-                              let p_turnblack = (usi_turnblack !== usi_ponder);
+                              let p_turnblack = (usi_turnblack !== (usi_ponder && !searchParam.stochastic));
                               if (cmds[i + 1] === "cp") {
                                 isscore = true;
                                 let s_cp = parseInt(cmds[i + 2]);
@@ -330,9 +331,9 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
                         }
                         if (infoobj.depth) {
                           if (infoobj.seldepth) {
-                            text_c2 = `depth${infoobj.depth}/${infoobj.seldepth} ${fmtnodes(infoobj.nodes)}`;
+                            text_c2 = `depth${infoobj.depth}/${infoobj.seldepth} : ${fmtnodes(infoobj.nodes)}`;
                           } else {
-                            text_c2 = `depth${infoobj.depth} ${fmtnodes(infoobj.nodes)}`;
+                            text_c2 = `depth${infoobj.depth} : ${fmtnodes(infoobj.nodes)}`;
                           }
                         }
                         if (isscore) {

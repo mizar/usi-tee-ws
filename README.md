@@ -69,3 +69,5 @@ OBS Studio の ブラウザソース(BrowserSource) でこれを表示する場�
 - http://localhost:8081/bar.html
 - http://localhost:8081/bar.html?engine=Suisho5 (エンジン名表示をする例)
 - http://localhost:8081/bar.html?engine=DeepSuisho (エンジン名表示をする例)
+- http://localhost:8081/bar.html?engine=DeepSuisho&wfn=atan&coef=355 (エンジン名表示&評価値→勝率変換をシグモイド関数から逆正接関数に変更・係数を1200から355に変更)
+- http://localhost:8081/bar.html?engine=DeepSuisho&wfn=atan&coef=355&stochastic (エンジン名表示&評価値→勝率変換をシグモイド関数から逆正接関数に変更・係数を1200から355に変更・Stochastic Ponder対応)
