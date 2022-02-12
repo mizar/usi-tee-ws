@@ -31,7 +31,9 @@ const POS_HIRATE = "position startpos";
 let usi_position = POS_HIRATE;
 let usi_go = null;
 let usi_ponderhit = null;
+let usi_stop = null;
 let usie_info = [];
+let usie_bestmove = null;
 
 // http/ws server
 
@@ -82,14 +84,20 @@ app.ws("/usi.ws", (ws, _req) => {
       ws.send(JSON.stringify({ sender: "cache", d: usi_position }));
       if (usi_go) {
         ws.send(JSON.stringify({ sender: "cache", d: usi_go }));
-        if (usi_ponderhit) {
-          ws.send(JSON.stringify({ sender: "cache", d: usi_ponderhit }));
-        }
+      }
+      if (usi_ponderhit) {
+        ws.send(JSON.stringify({ sender: "cache", d: usi_ponderhit }));
+      }
+      if (usi_stop) {
+        ws.send(JSON.stringify({ sender: "cache", d: usi_stop }));
       }
       for (let i = 0; i < usie_info.length; i++) {
         if (usie_info[i]) {
           ws.send(JSON.stringify({ sender: "cachee", d: usie_info[i] }));
         }
+      }
+      if (usie_bestmove) {
+        ws.send(JSON.stringify({ sender: "cachee", d: usie_bestmove }));
       }
     }
   } catch (e) {
@@ -137,14 +145,39 @@ rl_main.on("line", (line) => {
       }
     }
   }
-  if (line.startsWith("position")) { usi_position = line; usi_go = null; usi_ponderhit = null; }
-  if (line.startsWith("go")) { usi_go = line; usi_ponderhit = null; }
-  if (line.startsWith("ponderhit")) { usi_ponderhit = line; }
+  if (line.startsWith("position")) {
+    usi_position = line;
+    usi_go = null;
+    usi_ponderhit = null;
+    usi_stop = null;
+    usie_info = [];
+    usie_bestmove = null;
+  }
+  if (line.startsWith("go")) {
+    usi_go = line;
+    usi_ponderhit = null;
+    usi_stop = null;
+    usie_info = [];
+    usie_bestmove = null;
+  }
+  if (line.startsWith("ponderhit")) {
+    usi_ponderhit = line;
+  }
+  if (line.startsWith("stop")) {
+    usi_stop = line;
+  }
   if (line.startsWith("isready")) {
     usi_position = POS_HIRATE;
     usi_go = null;
     usi_ponderhit = null;
+    usi_stop = null;
     usie_info = [];
+    usie_bestmove = null;
+  }
+  if (line.startsWith("quit")) {
+    server.close();
+    subproc.close();
+    exit();
   }
 });
 rl_subp.on("line", (line) => {
@@ -178,7 +211,9 @@ rl_subp.on("line", (line) => {
       }
     }
   }
-  if (line.startsWith("bestmove")) { usie_info = []; }
+  if (line.startsWith("bestmove")) {
+    usie_bestmove = line;
+  }
 });
 
 // When the pipe is closed, terminate the server, sub-process, and current process.
