@@ -191,9 +191,11 @@ rl_main.on("line", (line) => {
   }
   if (line.startsWith("quit")) {
     clearInterval(interval);
-    server.close();
-    subproc.close();
-    exit();
+    setTimeout(() => {
+      server.close();
+      subproc.close();
+      exit();
+    }, 1000);
   }
 });
 rl_subp.on("line", (line) => {
