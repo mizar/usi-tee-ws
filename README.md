@@ -64,7 +64,7 @@ usi-tee-ws サーバー起動後は、指定したポート番号に対応した
 
 ### 評価値ゲージの表示 (port 8081 で起動した場合)
 
-OBS Studio の ブラウザソース(BrowserSource) でこれを表示する場合、幅880、高さ96 のサイズ指定を推奨します。エンジン起動前に OBS Studio を起動した場合はこれらの URL にはアクセスできないため、エンジン起動後に作成した ブラウザソース(BrowserSource) を選択して 「再読み込み」 を行います。
+OBS Studio の ブラウザソース(BrowserSource) でこれを表示する場合、幅1320、高さ96 のサイズ指定を推奨します。エンジン起動前に OBS Studio を起動した場合はこれらの URL にはアクセスできないため、エンジン起動後に作成した ブラウザソース(BrowserSource) を選択して 「再読み込み」 を行います。
 
 - http://localhost:8081/bar.html
 - http://localhost:8081/bar.html?engine=Suisho5 (エンジン名表示をする例)
