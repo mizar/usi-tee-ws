@@ -65,243 +65,291 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
 </head>
 
 <body>
-  <div id="root"></div>
-  <script src="./mithril.min.js"></script>
-  <script src="./shogi.min.js"></script>
-  <script src="./json-kifu-format.min.js"></script>
-  <script>
-    const $ = (...args) => document.querySelector(...args);
-    const searchParam = (() => {
-      const obj = {};
-      for (const param of location.search.substring(1).split(/[&;]/)) {
-        const [k, v] = param.split('=');
-        obj[k] = v ? decodeURIComponent(v) : true;
-      }
-      return obj;
-    })();
-    const App = () => {
-      const { host, protocol } = window.location;
-      const wsProtocol = protocol === "http:" ? "ws://" : "wss://";
-      const address = wsProtocol + host + "/usi.ws";
+<div id="root"></div>
+<script src="./mithril.min.js"></script>
+<script src="./shogi.min.js"></script>
+<script src="./json-kifu-format.min.js"></script>
+<script>
+const $ = (...args) => document.querySelector(...args);
+const searchParam = (() => {
+  const obj = {};
+  for (const param of location.search.substring(1).split(/[&;]/)) {
+    const [k, v] = param.split('=');
+    obj[k] = v ? decodeURIComponent(v) : true;
+  }
+  return obj;
+})();
+const App = () => {
+  const { host, protocol } = window.location;
+  const wsProtocol = protocol === "http:" ? "ws://" : "wss://";
+  const address = wsProtocol + host + "/usi.ws";
 
-      // 評価値→勝率変換: 連盟モバイル棋譜中継風 シグモイド関数(係数=1200)
-      const cp2wrate = (cp) => {
-        const coef = searchParam.coef ? parseInt(searchParam.coef) : 1200;
-        switch (searchParam.wfn) {
-          case 'atan': // 逆正接関数 (wfn=atan&coef=355)
-            return (1/Math.PI*Math.atan(Math.PI*cp/(4*coef))+0.5);
-          case 'sigmoid': // シグモイド関数 (wfn=sigmoid&coed=1200)
-          default:
-            return (1/(1+Math.exp(-cp/coef)));
-        }
-      };
+  // 評価値→勝率変換: 連盟モバイル棋譜中継風 シグモイド関数(係数=1200)
+  const cp2wrate = (cp) => {
+    const coef = searchParam.coef ? parseInt(searchParam.coef) : 1200;
+    switch (searchParam.wfn) {
+      case 'atan': // 逆正接関数 (wfn=atan&coef=355)
+        return (1/Math.PI*Math.atan(Math.PI*cp/(4*coef))+0.5);
+      case 'sigmoid': // シグモイド関数 (wfn=sigmoid&coed=1200)
+      default:
+        return (1/(1+Math.exp(-cp/coef)));
+    }
+  };
 
-      const fmtnodes = (nodes) => {
-        if (nodes < 999.5e0) { return `${nodes}n`; }
-        if (nodes < 999.5e3) { return `${(nodes / 1e3).toPrecision(3)}kn`; }
-        if (nodes < 999.5e6) { return `${(nodes / 1e6).toPrecision(3)}Mn`; }
-        if (nodes < 999.5e9) { return `${(nodes / 1e9).toPrecision(3)}Gn`; }
-        if (nodes < 999.5e12) { return `${(nodes / 1e12).toPrecision(3)}Tn`; }
-        if (nodes < 999.5e15) { return `${(nodes / 1e15).toPrecision(3)}Pn`; }
-        if (nodes < 999.5e18) { return `${(nodes / 1e18).toPrecision(3)}En`; }
-        if (nodes < 999.5e21) { return `${(nodes / 1e21).toPrecision(3)}Zn`; }
-        if (nodes < 999.5e24) { return `${(nodes / 1e24).toPrecision(3)}Yn`; }
-        return `${Math.round(nodes / 1e24)}Yn`;
-      };
+  const fmtnodes = (nodes) => {
+    if (nodes < 999.5e0) { return `${nodes}n`; }
+    if (nodes < 999.5e3) { return `${(nodes / 1e3).toPrecision(3)}kn`; }
+    if (nodes < 999.5e6) { return `${(nodes / 1e6).toPrecision(3)}Mn`; }
+    if (nodes < 999.5e9) { return `${(nodes / 1e9).toPrecision(3)}Gn`; }
+    if (nodes < 999.5e12) { return `${(nodes / 1e12).toPrecision(3)}Tn`; }
+    if (nodes < 999.5e15) { return `${(nodes / 1e15).toPrecision(3)}Pn`; }
+    if (nodes < 999.5e18) { return `${(nodes / 1e18).toPrecision(3)}En`; }
+    if (nodes < 999.5e21) { return `${(nodes / 1e21).toPrecision(3)}Zn`; }
+    if (nodes < 999.5e24) { return `${(nodes / 1e24).toPrecision(3)}Yn`; }
+    return `${Math.round(nodes / 1e24)}Yn`;
+  };
 
-      let state = "INIT";
-      let pvoutput = "";
-      let output = "";
-      let pvarray = [];
+  let state = "INIT";
+  let pvoutput = "";
+  let output = "";
+  let pvarray = [];
 
-      const POS_HIRATE = "position startpos";
-      const name_black = "先手";
-      const name_white = "後手";
-      const name_turn = "手番";
-      let name_engine = searchParam.engine ? searchParam.engine : "";
-      let usi_position = POS_HIRATE;
-      let usi_ply = 1;
-      let usi_turnblack = true;
-      let usi_go = null;
-      let usi_ponderhit = null;
-      let is_ponder = false;
-      let is_stochastic = searchParam.stochastic ? true : false;
-      let usi_nodes = null;
-      let usi_depth = null;
-      let usi_seldepth = null;
-      let usie_info = [];
-      let black_width = 500;
-      let white_width = 500;
-      let text_c1 = name_engine;
-      let text_c2 = "";
-      let text_b0 = "";
-      let text_b1 = "";
-      let text_b2 = "";
-      let text_w0 = "";
-      let text_w1 = "";
-      let text_w2 = "";
+  const POS_HIRATE = "position startpos";
+  const name_black = "先手";
+  const name_white = "後手";
+  const name_turn = "手番";
+  let name_engine = searchParam.engine ? searchParam.engine : "";
+  let usi_position = POS_HIRATE;
+  let usi_ply = 1;
+  let usi_turnblack = true;
+  let usi_go = null;
+  let usi_ponderhit = null;
+  let is_ponder = false;
+  let is_stochastic = searchParam.stochastic ? true : false;
+  let black_width = 500;
+  let white_width = 500;
+  let text_c1 = name_engine;
+  let text_c2 = "";
+  let text_b0 = "";
+  let text_b1 = "";
+  let text_b2 = "";
+  let text_w0 = "";
+  let text_w1 = "";
+  let text_w2 = "";
 
-      const omitoutput = () => {
-        // Omit output to 100kB.
-        if (output.length > 1e5) { output = output.substring(output.indexOf("\n", output.length - 1e5) + 1);  }
-      };
+  const omitoutput = () => {
+    // Omit output to 100kB.
+    if (output.length > 1e5) { output = output.substring(output.indexOf("\n", output.length - 1e5) + 1);  }
+  };
 
-      (function wsconnect() {
-        const socket = new window.WebSocket(address);
+  (function wsconnect() {
+    const socket = new window.WebSocket(address);
 
-        socket.onmessage = (res)=> {
-          if (typeof res.data === 'string') {
-            if (res.data.startsWith("{")) {
-              try {
-                const obj = JSON.parse(res.data);
-                const cmds = obj.d.split(" ");
-                let cmdi = 0;
-                switch (obj.sender) {
-                  case "cache":
-                  case "ui":
-                    switch(cmds[0]) {
-                      case "position":
-                        if (cmds[1] === 'startpos') {
-                          usi_turnblack = true;
-                          usi_ply = 1;
-                          cmdi = 2;
-                        } else if (
-                          cmds[1] === 'sfen' &&
-                          cmds[2].match(/^((\+?[KRBGSNLPkrbgsnlp]|[1-9])+\/){8}(\+?[KRBGSNLPkrbgsnlp]|[1-9])+$/) &&
-                          cmds[3].match(/^[bw]$/) &&
-                          cmds[4].match(/^(-|(2?[RBrb]|[2-4]?[GSNLgsnl]|(1[0-8]|[2-9])?[Pp])+)$/) &&
-                          cmds[5].match(/^[0-9]+$/)) {
-                          usi_turnblack = (cmds[3] === 'b');
-                          usi_ply = parseInt(cmds[5]);
-                          cmdi = 6;
-                        } else {
-                          throw "Uninterpretable position";
-                        }
-                        for (let i = cmdi; i < cmds.length; i++) {
-                          if (`${cmds[i]}`.match(/^(pass|0000|[1-9][a-i][1-9][a-i]\+?|[RBGSNLP]\*[1-9][a-i])$/)) {
-                            usi_ply++;
-                            usi_turnblack = !usi_turnblack;
-                          }
-                        }
-                        usi_position = obj.d;
-                        text_c1 = usi_ply > 1 ? `${name_engine} ply${usi_ply}` : name_engine;
-                        text_c2 = "";
-                        text_b0 = usi_turnblack ? name_turn : "";
-                        text_b1 = "";
-                        text_b2 = name_black;
-                        text_w0 = usi_turnblack ? "" : name_turn;
-                        text_w1 = "";
-                        text_w2 = name_white;
-                        pvoutput = "";
-                        pvarray = [];
-                        break;
-                      case "go":
-                        if (cmds[1] === 'ponder') {
-                          usi_ply--;
-                          usi_turnblack = !usi_turnblack;
-                          is_ponder = true;
-                        } else {
-                          is_ponder = false;
-                        }
-                        usi_go = obj.d;
-                        pvoutput = "";
-                        pvarray = [];
-                        text_c1 = usi_ply > 1 ? `${name_engine} ply${usi_ply}` : name_engine;
-                        text_b0 = usi_turnblack ? name_turn : "";
-                        text_w0 = usi_turnblack ? "" : name_turn;
-                        break;
-                      case "ponderhit":
+    socket.onmessage = (res)=> {
+      if (typeof res.data === 'string') {
+        if (res.data.startsWith("{")) {
+          try {
+            const obj = JSON.parse(res.data);
+            const cmds = obj.d.split(" ");
+            let cmdi = 0;
+            switch (obj.sender) {
+              case "cache":
+              case "ui":
+                switch(cmds[0]) {
+                  case "position":
+                    if (cmds[1] === 'startpos') {
+                      usi_turnblack = true;
+                      usi_ply = 1;
+                      cmdi = 2;
+                    } else if (
+                      cmds[1] === 'sfen' &&
+                      cmds[2].match(/^((\+?[KRBGSNLPkrbgsnlp]|[1-9])+\/){8}(\+?[KRBGSNLPkrbgsnlp]|[1-9])+$/) &&
+                      cmds[3].match(/^[bw]$/) &&
+                      cmds[4].match(/^(-|(2?[RBrb]|[2-4]?[GSNLgsnl]|(1[0-8]|[2-9])?[Pp])+)$/) &&
+                      cmds[5].match(/^[0-9]+$/)) {
+                      usi_turnblack = (cmds[3] === 'b');
+                      usi_ply = parseInt(cmds[5]);
+                      cmdi = 6;
+                    } else {
+                      throw "Uninterpretable position";
+                    }
+                    for (let i = cmdi; i < cmds.length; i++) {
+                      if (`${cmds[i]}`.match(/^(pass|0000|[1-9][a-i][1-9][a-i]\+?|[RBGSNLP]\*[1-9][a-i])$/)) {
                         usi_ply++;
                         usi_turnblack = !usi_turnblack;
-                        is_ponder = false;
-                        usi_ponderhit = obj.d;
-                        text_c1 = usi_ply > 1 ? `${name_engine} ply${usi_ply}` : name_engine;
-                        text_b0 = usi_turnblack ? name_turn : "";
-                        text_w0 = usi_turnblack ? "" : name_turn;
-                        break;
-                      case "isready":
-                      case "usinewgame":
-                        usi_position = POS_HIRATE;
-                        usi_ply = 1;
-                        usi_turnblack = true;
-                        is_stochastic = searchParam.stochastic ? true : false;
-                        is_ponder = false;
-                        black_width = 500;
-                        white_width = 500;
-                        text_c1 = name_engine;
-                        text_c2 = "";
-                        text_b0 = usi_turnblack ? name_turn : "";
-                        text_b1 = "";
-                        text_b2 = name_black;
-                        text_w0 = usi_turnblack ? "" : name_turn;
-                        text_w1 = "";
-                        text_w2 = name_white;
-                        pvoutput = "";
-                        pvarray = [];
-                        break;
-                      case "stop":
-                      case "gameover":
-                        break;
+                      }
                     }
-                    omitoutput();
-                    if (obj.sender === 'cache') { output += "#"; }
-                    output += `>> ${obj.d}\n`;
-                    m.redraw();
+                    usi_position = obj.d;
+                    text_c1 = usi_ply > 1 ? `${name_engine} ply${usi_ply}` : name_engine;
+                    text_c2 = "";
+                    text_b0 = usi_turnblack ? name_turn : "";
+                    text_b1 = "";
+                    text_b2 = name_black;
+                    text_w0 = usi_turnblack ? "" : name_turn;
+                    text_w1 = "";
+                    text_w2 = name_white;
+                    pvoutput = "";
+                    pvarray.length = 0;
                     break;
-                  case "cachee":
-                  case "engine":
-                    if (obj.sender === 'cachee') { output += "# "; }
-                    omitoutput();
-                    output += `${obj.d}\n`;
-                    switch(cmds[0]) {
-                      case "info":
-                        const infoobj = {
-                          "multipv": 1,
-                          "turnblack": usi_turnblack,
-                          "ponder": is_ponder,
-                          "stochastic": is_stochastic,
-                        };
-                        try {
-                          for (let i = 1; i < cmds.length; i++) {
-                            switch(cmds[i]) {
-                              // skip "pv" and "string"
-                              case "pv":
-                                {
-                                  const opos = new ShogiJS.Shogi();
-                                  const poshis = [];
-                                  let pcmdi = 1;
-                                  const poscmds = usi_position.split(" ");
-                                  let pos_lastmove = "";
-                                  if (poscmds[1] === 'startpos') {
-                                    pcmdi = 2;
-                                    opos.initialize();
-                                  } else if (
-                                    poscmds[1] === 'sfen' &&
-                                    poscmds[2].match(/^((\+?[KRBGSNLPkrbgsnlp]|[1-9])+\/){8}(\+?[KRBGSNLPkrbgsnlp]|[1-9])+$/) &&
-                                    poscmds[3].match(/^[bw]$/) &&
-                                    poscmds[4].match(/^(-|(2?[RBrb]|[2-4]?[GSNLgsnl]|(1[0-8]|[2-9])?[Pp])+)$/) &&
-                                    poscmds[5].match(/^[0-9]+$/)) {
-                                    pcmdi = 6;
-                                    opos.initializeFromSFENString(poscmds[2,3,4,5].join(" "));
-                                  } else {
-                                    throw "Uninterpretable position";
-                                  }
+                  case "go":
+                    if (cmds[1] === 'ponder') {
+                      usi_ply--;
+                      usi_turnblack = !usi_turnblack;
+                      is_ponder = true;
+                    } else {
+                      is_ponder = false;
+                    }
+                    usi_go = obj.d;
+                    pvoutput = "";
+                    pvarray.length = 0;
+                    text_c1 = usi_ply > 1 ? `${name_engine} ply${usi_ply}` : name_engine;
+                    text_b0 = usi_turnblack ? name_turn : "";
+                    text_w0 = usi_turnblack ? "" : name_turn;
+                    break;
+                  case "ponderhit":
+                    usi_ply++;
+                    usi_turnblack = !usi_turnblack;
+                    is_ponder = false;
+                    usi_ponderhit = obj.d;
+                    text_c1 = usi_ply > 1 ? `${name_engine} ply${usi_ply}` : name_engine;
+                    text_b0 = usi_turnblack ? name_turn : "";
+                    text_w0 = usi_turnblack ? "" : name_turn;
+                    break;
+                  case "isready":
+                  case "usinewgame":
+                    usi_position = POS_HIRATE;
+                    usi_ply = 1;
+                    usi_turnblack = true;
+                    is_stochastic = searchParam.stochastic ? true : false;
+                    is_ponder = false;
+                    black_width = 500;
+                    white_width = 500;
+                    text_c1 = name_engine;
+                    text_c2 = "";
+                    text_b0 = usi_turnblack ? name_turn : "";
+                    text_b1 = "";
+                    text_b2 = name_black;
+                    text_w0 = usi_turnblack ? "" : name_turn;
+                    text_w1 = "";
+                    text_w2 = name_white;
+                    pvoutput = "";
+                    pvarray.length = 0;
+                    break;
+                  case "stop":
+                  case "gameover":
+                    break;
+                }
+                omitoutput();
+                if (obj.sender === 'cache') { output += "#"; }
+                output += `>> ${obj.d}\n`;
+                m.redraw();
+                break;
+              case "cachee":
+              case "engine":
+                if (obj.sender === 'cachee') { output += "# "; }
+                omitoutput();
+                output += `${obj.d}\n`;
+                switch(cmds[0]) {
+                  case "info":
+                    const infoobj = {
+                      "multipv": 1,
+                      "turnblack": usi_turnblack,
+                      "ponder": is_ponder,
+                      "stochastic": is_stochastic,
+                    };
+                    try {
+                      for (let i = 1; i < cmds.length; i++) {
+                        switch(cmds[i]) {
+                          // skip "pv" and "string"
+                          case "pv":
+                            {
+                              const opos = new ShogiJS.Shogi();
+                              const poshis = [];
+                              let pcmdi = 1;
+                              const poscmds = usi_position.split(" ");
+                              let pos_lastmove = "";
+                              if (poscmds[1] === 'startpos') {
+                                pcmdi = 2;
+                                opos.initialize();
+                              } else if (
+                                poscmds[1] === 'sfen' &&
+                                poscmds[2].match(/^((\+?[KRBGSNLPkrbgsnlp]|[1-9])+\/){8}(\+?[KRBGSNLPkrbgsnlp]|[1-9])+$/) &&
+                                poscmds[3].match(/^[bw]$/) &&
+                                poscmds[4].match(/^(-|(2?[RBrb]|[2-4]?[GSNLgsnl]|(1[0-8]|[2-9])?[Pp])+)$/) &&
+                                poscmds[5].match(/^[0-9]+$/)) {
+                                pcmdi = 6;
+                                opos.initializeFromSFENString(poscmds[2,3,4,5].join(" "));
+                              } else {
+                                throw "Uninterpretable position";
+                              }
+                              poshis.push(opos.toSFENString());
+                              for (let posi = pcmdi; posi < poscmds.length; posi++) {
+                                if (`${poscmds[posi]}`.match(/^(pass|0000)$/)) {
+                                  opos.setTurn(1 - opos.turn);
                                   poshis.push(opos.toSFENString());
-                                  for (let posi = pcmdi; posi < poscmds.length; posi++) {
-                                    if (`${poscmds[posi]}`.match(/^(pass|0000)$/)) {
-                                      opos.setTurn(1 - opos.turn);
-                                      poshis.push(opos.toSFENString());
-                                    } else if (`${poscmds[posi]}`.match(/^([1-9][a-i][1-9][a-i]\+?)$/)) {
+                                } else if (`${poscmds[posi]}`.match(/^([1-9][a-i][1-9][a-i]\+?)$/)) {
+                                  opos.move(
+                                    poscmds[posi].codePointAt(0) - 48, poscmds[posi].codePointAt(1) - 96,
+                                    poscmds[posi].codePointAt(2) - 48, poscmds[posi].codePointAt(3) - 96,
+                                    poscmds[posi][4] === "+",
+                                  );
+                                  pos_lastmove = poscmds[posi];
+                                  poshis.push(opos.toSFENString());
+                                } else if (`${poscmds[posi]}`.match(/^([RBGSNLP]\*[1-9][a-i])$/)) {
+                                  opos.drop(
+                                    poscmds[posi].codePointAt(2) - 48, poscmds[posi].codePointAt(3) - 96,
+                                    ({
+                                      "R": "HI",
+                                      "B": "KA",
+                                      "G": "KI",
+                                      "S": "GI",
+                                      "N": "KE",
+                                      "L": "KY",
+                                      "P": "FU",
+                                    })[poscmds[posi][0]],
+                                  );
+                                  pos_lastmove = poscmds[posi];
+                                  poshis.push(opos.toSFENString());
+                                }
+                              }
+                              const tryparse = (_i, _is_ponder, _is_stochastic) => {
+                                try {
+                                  opos.initializeFromSFENString(poshis[poshis.length - (_is_ponder ? 2 : 1)]);
+                                  const jkfplayer = JSONKifuFormat.JKFPlayer.parse(opos.toCSAString());
+                                  const doMove = (sfenmove) => {
+                                    if (sfenmove.match(/^([1-9][a-i][1-9][a-i]\+?)$/)) {
+                                      const move = {
+                                        "from": { "x": sfenmove.codePointAt(0) - 48, "y": sfenmove.codePointAt(1) - 96 },
+                                        "to": { "x": sfenmove.codePointAt(2) - 48, "y": sfenmove.codePointAt(3) - 96 },
+                                      };
+                                      const piece = jkfplayer.shogi.get(move.from.x, move.from.y);
+                                      if (ShogiJS.Piece.canPromote(piece.kind) && (
+                                        JSONKifuFormat.Normalizer.canPromote(move.from, opos.turn) ||
+                                        JSONKifuFormat.Normalizer.canPromote(move.to, opos.turn)
+                                      )) {
+                                        move["promote"] = sfenmove[4] === "+";
+                                      }
+                                      jkfplayer.inputMove(move);
                                       opos.move(
-                                        poscmds[posi].codePointAt(0) - 48, poscmds[posi].codePointAt(1) - 96,
-                                        poscmds[posi].codePointAt(2) - 48, poscmds[posi].codePointAt(3) - 96,
-                                        poscmds[posi][4] === "+",
+                                        sfenmove.codePointAt(0) - 48, sfenmove.codePointAt(1) - 96,
+                                        sfenmove.codePointAt(2) - 48, sfenmove.codePointAt(3) - 96,
+                                        sfenmove[4] === "+",
                                       );
-                                      pos_lastmove = poscmds[posi];
-                                      poshis.push(opos.toSFENString());
-                                    } else if (`${poscmds[posi]}`.match(/^([RBGSNLP]\*[1-9][a-i])$/)) {
+                                    } else if (sfenmove.match(/^([RBGSNLP]\*[1-9][a-i])$/)) {
+                                      jkfplayer.inputMove({
+                                        "piece": ({
+                                          "R": "HI",
+                                          "B": "KA",
+                                          "G": "KI",
+                                          "S": "GI",
+                                          "N": "KE",
+                                          "L": "KY",
+                                          "P": "FU",
+                                        })[sfenmove[0]],
+                                        "to": { "x": sfenmove.codePointAt(2) - 48, "y": sfenmove.codePointAt(3) - 96 },
+                                      });
                                       opos.drop(
-                                        poscmds[posi].codePointAt(2) - 48, poscmds[posi].codePointAt(3) - 96,
+                                        sfenmove.codePointAt(2) - 48, sfenmove.codePointAt(3) - 96,
                                         ({
                                           "R": "HI",
                                           "B": "KA",
@@ -310,357 +358,305 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
                                           "N": "KE",
                                           "L": "KY",
                                           "P": "FU",
-                                        })[poscmds[posi][0]],
+                                        })[sfenmove[0]],
                                       );
-                                      pos_lastmove = poscmds[posi];
-                                      poshis.push(opos.toSFENString());
-                                    }
-                                  }
-                                  const tryparse = (_i, _is_ponder, _is_stochastic) => {
-                                    try {
-                                      opos.initializeFromSFENString(poshis[poshis.length - (_is_ponder ? 2 : 1)]);
-                                      const jkfplayer = JSONKifuFormat.JKFPlayer.parse(opos.toCSAString());
-                                      const doMove = (sfenmove) => {
-                                        if (sfenmove.match(/^([1-9][a-i][1-9][a-i]\+?)$/)) {
-                                          const move = {
-                                            "from": { "x": sfenmove.codePointAt(0) - 48, "y": sfenmove.codePointAt(1) - 96 },
-                                            "to": { "x": sfenmove.codePointAt(2) - 48, "y": sfenmove.codePointAt(3) - 96 },
-                                          };
-                                          const piece = jkfplayer.shogi.get(move.from.x, move.from.y);
-                                          if (ShogiJS.Piece.canPromote(piece.kind) && (
-                                            JSONKifuFormat.Normalizer.canPromote(move.from, opos.turn) ||
-                                            JSONKifuFormat.Normalizer.canPromote(move.to, opos.turn)
-                                          )) {
-                                            move["promote"] = sfenmove[4] === "+";
-                                          }
-                                          jkfplayer.inputMove(move);
-                                          opos.move(
-                                            sfenmove.codePointAt(0) - 48, sfenmove.codePointAt(1) - 96,
-                                            sfenmove.codePointAt(2) - 48, sfenmove.codePointAt(3) - 96,
-                                            sfenmove[4] === "+",
-                                          );
-                                        } else if (sfenmove.match(/^([RBGSNLP]\*[1-9][a-i])$/)) {
-                                          jkfplayer.inputMove({
-                                            "piece": ({
-                                              "R": "HI",
-                                              "B": "KA",
-                                              "G": "KI",
-                                              "S": "GI",
-                                              "N": "KE",
-                                              "L": "KY",
-                                              "P": "FU",
-                                            })[sfenmove[0]],
-                                            "to": { "x": sfenmove.codePointAt(2) - 48, "y": sfenmove.codePointAt(3) - 96 },
-                                          });
-                                          opos.drop(
-                                            sfenmove.codePointAt(2) - 48, sfenmove.codePointAt(3) - 96,
-                                            ({
-                                              "R": "HI",
-                                              "B": "KA",
-                                              "G": "KI",
-                                              "S": "GI",
-                                              "N": "KE",
-                                              "L": "KY",
-                                              "P": "FU",
-                                            })[sfenmove[0]],
-                                          );
-                                        }
-                                      };
-                                      if (_is_ponder && !_is_stochastic) {
-                                        doMove(pos_lastmove);
-                                      }
-                                      for (; _i < cmds.length; _i++) {
-                                        doMove(cmds[_i]);
-                                      }
-                                      return jkfplayer.getReadableKifuState().slice(1).map(e => e.kifu.replace(/\s/g, "")).join("");
-                                    } catch (_) {
-                                      console.error(`pv_tryparse fail: ${_is_ponder}, ${_is_stochastic}`);
-                                      return null;
                                     }
                                   };
-                                  infoobj.pv = tryparse(i, is_ponder, is_stochastic);
-                                  if (!infoobj.pv && !is_ponder) {
-                                    infoobj.pv = tryparse(i, true, is_stochastic);
-                                    if (infoobj.pv) {
-                                      infoobj.ponder = true;
-                                      infoobj.stochastic = is_stochastic;
-                                    }
+                                  if (_is_ponder && !_is_stochastic) {
+                                    doMove(pos_lastmove);
                                   }
-                                  if (!infoobj.pv && !is_stochastic) {
-                                    infoobj.pv = tryparse(i, true, true);
-                                    if (infoobj.pv) {
-                                      is_stochastic = true;
-                                      infoobj.ponder = true;
-                                      infoobj.stochastic = true;
-                                    }
+                                  for (; _i < cmds.length; _i++) {
+                                    doMove(cmds[_i]);
                                   }
-                                  i = cmds.length;
+                                  return jkfplayer.getReadableKifuState().slice(1).map(e => e.kifu.replace(/\s/g, "")).join("");
+                                } catch (_) {
+                                  console.error(`pv_tryparse fail: ${_is_ponder}, ${_is_stochastic}`);
+                                  return null;
                                 }
-                                break;
-                              case "string":
-                                i = cmds.length;
-                                break;
-                              // skip all except "multipv 1"
-                              case "multipv":
-                                infoobj.multipv = Number(cmds[i + 1]);
-                                i++;
-                                break;
-                              case "depth":
-                                infoobj.depth = cmds[i + 1];
-                                i++;
-                                break;
-                              case "seldepth":
-                                infoobj.seldepth = cmds[i + 1];
-                                i++;
-                                break;
-                              case "nodes":
-                                infoobj.nodes = cmds[i + 1];
-                                i++;
-                                break;
-                              case "nps":
-                                infoobj.nps = cmds[i + 1];
-                                i++;
-                                break;
-                              case "hashfull":
-                                infoobj.hashfull = cmds[i + 1];
-                                i++;
-                                break;
-                              case "time":
-                                infoobj.time = cmds[i + 1];
-                                i++;
-                                break;
-                              case "score":
-                                switch(cmds[i + 3]) {
-                                  case "lowerbound":
-                                  case "upperbound":
-                                    infoobj.score = [cmds[i + 1], cmds[i + 2], cmds[i + 3]];
-                                    i += 3;
-                                    break;
-                                  default:
-                                    infoobj.score = [cmds[i + 1], cmds[i + 2], null];
-                                    i += 2;
-                                    break;
+                              };
+                              infoobj.pv = tryparse(i, is_ponder, is_stochastic);
+                              if (!infoobj.pv && !is_ponder) {
+                                infoobj.pv = tryparse(i, true, is_stochastic);
+                                if (infoobj.pv) {
+                                  infoobj.ponder = true;
+                                  infoobj.stochastic = is_stochastic;
                                 }
+                              }
+                              if (!infoobj.pv && !is_stochastic) {
+                                infoobj.pv = tryparse(i, true, true);
+                                if (infoobj.pv) {
+                                  is_stochastic = true;
+                                  infoobj.ponder = true;
+                                  infoobj.stochastic = true;
+                                }
+                              }
+                              i = cmds.length;
+                            }
+                            break;
+                          case "string":
+                            i = cmds.length;
+                            break;
+                          // skip all except "multipv 1"
+                          case "multipv":
+                            infoobj.multipv = Number(cmds[i + 1]);
+                            i++;
+                            break;
+                          case "depth":
+                            infoobj.depth = cmds[i + 1];
+                            i++;
+                            break;
+                          case "seldepth":
+                            infoobj.seldepth = cmds[i + 1];
+                            i++;
+                            break;
+                          case "nodes":
+                            infoobj.nodes = cmds[i + 1];
+                            i++;
+                            break;
+                          case "nps":
+                            infoobj.nps = cmds[i + 1];
+                            i++;
+                            break;
+                          case "hashfull":
+                            infoobj.hashfull = cmds[i + 1];
+                            i++;
+                            break;
+                          case "time":
+                            infoobj.time = cmds[i + 1];
+                            i++;
+                            break;
+                          case "score":
+                            switch(cmds[i + 3]) {
+                              case "lowerbound":
+                              case "upperbound":
+                                infoobj.score = [cmds[i + 1], cmds[i + 2], cmds[i + 3]];
+                                i += 3;
+                                break;
+                              default:
+                                infoobj.score = [cmds[i + 1], cmds[i + 2], null];
+                                i += 2;
                                 break;
                             }
-                          }
-                        } catch (e) {
-                          infoobj.multipv = 0;
-                          if (is_ponder) {
-                            is_stochastic = true;
-                          }
-                          console.error(e);
+                            break;
                         }
-                        if (infoobj.multipv > 0 && infoobj.score) {
-                          let p_turnblack = (infoobj.turnblack !== (infoobj.ponder && !infoobj.stochastic));
-                          const stype = infoobj.score[0];
-                          const svalue = infoobj.score[1];
-                          const sbound = infoobj.score[2];
-                          if (stype === "cp") {
-                            let s_cp = parseInt(svalue);
-                            let s_wrate = cp2wrate(s_cp);
-                            let i_wrate = cp2wrate(-s_cp);
-                            if (p_turnblack) {
-                              infoobj.width = [Math.round(s_wrate * 1000), Math.round(i_wrate * 1000)];
-                              infoobj.win = [`${Math.round(s_wrate * 100)}%`, `${Math.round(i_wrate * 100)}%`];
-                              infoobj.scorestr = [`${s_cp < 0 ? "" : "+"}${s_cp}`, `${s_cp > 0 ? "" : "+"}${-s_cp}`];
-                            } else {
-                              infoobj.width = [Math.round(i_wrate * 1000), Math.round(s_wrate * 1000)];
-                              infoobj.win = [`${Math.round(i_wrate * 100)}%`, `${Math.round(s_wrate * 100)}%`];
-                              infoobj.scorestr = [`${s_cp > 0 ? "" : "+"}${-s_cp}`, `${s_cp < 0 ? "" : "+"}${s_cp}`];
-                            }
-                          } else if (stype === "mate") {
-                            if (svalue === "+" || svalue === "-") {
-                              if ((svalue === "+") === p_turnblack) {
-                                infoobj.width = [1000, 0];
-                                infoobj.win = [`100%`, `0%`];
-                                infoobj.scorestr = [`+M`, `-M`];
-                              } else {
-                                infoobj.width = [0, 1000];
-                                infoobj.win = [`0%`, `100%`];
-                                infoobj.scorestr = [`-M`, `+M`];
-                              }
-                            } else {
-                              const mateply = parseInt(svalue);
-                              if (mateply === 0 || isNaN(mateply)) {
-                                infoobj.win = ["", ""];
-                                infoobj.scorestr = ["", ""];
-                              } else if (p_turnblack === (mateply > 0)) {
-                                infoobj.width = [1000, 0];
-                                infoobj.win = [`100%`, `0%`];
-                                infoobj.scorestr = [`+M${Math.abs(mateply)}`, `-M${Math.abs(mateply)}`];
-                              } else {
-                                infoobj.width = [0, 1000];
-                                infoobj.win = [`0%`, `100%`];
-                                infoobj.scorestr = [`-M${Math.abs(mateply)}`, `+M${Math.abs(mateply)}`];
-                              }
-                            }
+                      }
+                    } catch (e) {
+                      infoobj.multipv = 0;
+                      if (is_ponder) {
+                        is_stochastic = true;
+                      }
+                      console.error(e);
+                    }
+                    if (infoobj.multipv > 0 && infoobj.score) {
+                      let p_turnblack = (infoobj.turnblack !== (infoobj.ponder && !infoobj.stochastic));
+                      const stype = infoobj.score[0];
+                      const svalue = infoobj.score[1];
+                      const sbound = infoobj.score[2];
+                      if (stype === "cp") {
+                        let s_cp = parseInt(svalue);
+                        let s_wrate = cp2wrate(s_cp);
+                        let i_wrate = cp2wrate(-s_cp);
+                        if (p_turnblack) {
+                          infoobj.width = [Math.round(s_wrate * 1000), Math.round(i_wrate * 1000)];
+                          infoobj.win = [`${Math.round(s_wrate * 100)}%`, `${Math.round(i_wrate * 100)}%`];
+                          infoobj.scorestr = [`${s_cp < 0 ? "" : "+"}${s_cp}`, `${s_cp > 0 ? "" : "+"}${-s_cp}`];
+                        } else {
+                          infoobj.width = [Math.round(i_wrate * 1000), Math.round(s_wrate * 1000)];
+                          infoobj.win = [`${Math.round(i_wrate * 100)}%`, `${Math.round(s_wrate * 100)}%`];
+                          infoobj.scorestr = [`${s_cp > 0 ? "" : "+"}${-s_cp}`, `${s_cp < 0 ? "" : "+"}${s_cp}`];
+                        }
+                      } else if (stype === "mate") {
+                        if (svalue === "+" || svalue === "-") {
+                          if ((svalue === "+") === p_turnblack) {
+                            infoobj.width = [1000, 0];
+                            infoobj.win = [`100%`, `0%`];
+                            infoobj.scorestr = [`+M`, `-M`];
+                          } else {
+                            infoobj.width = [0, 1000];
+                            infoobj.win = [`0%`, `100%`];
+                            infoobj.scorestr = [`-M`, `+M`];
+                          }
+                        } else {
+                          const mateply = parseInt(svalue);
+                          if (mateply === 0 || isNaN(mateply)) {
+                            infoobj.win = ["", ""];
+                            infoobj.scorestr = ["", ""];
+                          } else if (p_turnblack === (mateply > 0)) {
+                            infoobj.width = [1000, 0];
+                            infoobj.win = [`100%`, `0%`];
+                            infoobj.scorestr = [`+M${Math.abs(mateply)}`, `-M${Math.abs(mateply)}`];
+                          } else {
+                            infoobj.width = [0, 1000];
+                            infoobj.win = [`0%`, `100%`];
+                            infoobj.scorestr = [`-M${Math.abs(mateply)}`, `+M${Math.abs(mateply)}`];
                           }
                         }
-                        if (infoobj.multipv == 1 && infoobj.score) {
-                          if (infoobj.width) {
-                            black_width = infoobj.width[0];
-                            white_width = infoobj.width[1];
-                          }
-                          if (infoobj.win) {
-                            text_b1 = infoobj.win[0];
-                            text_w1 = infoobj.win[1];
-                          }
-                          if (infoobj.scorestr) {
-                            text_b2 = `${name_black} ${infoobj.scorestr[0]}`;
-                            text_w2 = `${infoobj.scorestr[1]} ${name_white}`;
-                          }
-                          if (infoobj.depth) {
-                            if (infoobj.seldepth) {
-                              text_c2 = `depth${infoobj.depth}/${infoobj.seldepth} : ${fmtnodes(infoobj.nodes)} : ${fmtnodes(infoobj.nps)}ps`;
-                            } else {
-                              text_c2 = `depth${infoobj.depth} : ${fmtnodes(infoobj.nodes)} : ${fmtnodes(infoobj.nps)}ps`;
-                            }
-                          }
-                          m.redraw();
+                      }
+                    }
+                    if (infoobj.multipv == 1 && infoobj.score) {
+                      if (infoobj.width) {
+                        black_width = infoobj.width[0];
+                        white_width = infoobj.width[1];
+                      }
+                      if (infoobj.win) {
+                        text_b1 = infoobj.win[0];
+                        text_w1 = infoobj.win[1];
+                      }
+                      if (infoobj.scorestr) {
+                        text_b2 = `${name_black} ${infoobj.scorestr[0]}`;
+                        text_w2 = `${infoobj.scorestr[1]} ${name_white}`;
+                      }
+                      if (infoobj.depth) {
+                        if (infoobj.seldepth) {
+                          text_c2 = `depth${infoobj.depth}/${infoobj.seldepth} : ${fmtnodes(infoobj.nodes)} : ${fmtnodes(infoobj.nps)}ps`;
+                        } else {
+                          text_c2 = `depth${infoobj.depth} : ${fmtnodes(infoobj.nodes)} : ${fmtnodes(infoobj.nps)}ps`;
                         }
-                        if (infoobj.multipv > 0) {
-                          pvarray[infoobj.multipv] = infoobj;
-                          const sobj = pvarray.filter(e => e).map(e => ({
-                            "multipv": String(e.multipv),
-                            "depth": e.seldepth ? `${e.depth}/${e.seldepth}` : String(e.depth || ""),
-                            "score": String(e.scorestr && e.scorestr[0] || ""),
-                            "pv": String(e.pv || ""),
-                          }));
-                          const max_multipv = Math.max(...sobj.map(e => e.multipv.length));
-                          const max_depth = Math.max(...sobj.map(e => e.depth.length));
-                          const max_score = Math.max(...sobj.map(e => e.score.length));
-                          const max_pv = Math.max(...sobj.map(e => e.pv.length));
-                          pvoutput = sobj.map(e => `#${e.multipv.padStart(max_multipv, "0")}: ${e.depth.padStart(max_depth, " ")} : ${e.score.padStart(max_score, " ")} : ${e.pv}\n`).join("");
-                        }
-                        break;
+                      }
+                      m.redraw();
+                    }
+                    if (infoobj.multipv > 0) {
+                      pvarray[infoobj.multipv] = infoobj;
+                      const sobj = pvarray.filter(e => e).map(e => ({
+                        "multipv": String(e.multipv),
+                        "depth": e.seldepth ? `${e.depth}/${e.seldepth}` : String(e.depth || ""),
+                        "score": String(e.scorestr && e.scorestr[0] || ""),
+                        "pv": String(e.pv || ""),
+                      }));
+                      const max_multipv = Math.max(...sobj.map(e => e.multipv.length));
+                      const max_depth = Math.max(...sobj.map(e => e.depth.length));
+                      const max_score = Math.max(...sobj.map(e => e.score.length));
+                      const max_pv = Math.max(...sobj.map(e => e.pv.length));
+                      pvoutput = sobj.map(e => `#${e.multipv.padStart(max_multipv, "0")}: ${e.depth.padStart(max_depth, " ")} : ${e.score.padStart(max_score, " ")} : ${e.pv}\n`).join("");
                     }
                     break;
                 }
-              } catch(e) {
-                console.error(e);
-              }
-            } else {
-              console.log(`## ${res.data}\n`);
+                break;
             }
-            m.redraw();
+          } catch(e) {
+            console.error(e);
           }
-        };
-
-        socket.onopen = () => {
-          state = "CONNECTED";
-          omitoutput();
-          output += `## ${new Date()} : websocket is connected.\n`;
-          text_c1 = name_engine;
-          text_c2 = "";
-          text_b0 = usi_turnblack ? name_turn : "";
-          text_b1 = "";
-          text_b2 = name_black;
-          text_w0 = usi_turnblack ? "" : name_turn;
-          text_w1 = "";
-          text_w2 = name_white;
-          m.redraw();
+        } else {
+          console.log(`## ${res.data}\n`);
         }
-
-        socket.onclose = (e) => {
-          state = "DISCONNECTED";
-          omitoutput();
-          output += `## ${new Date()} : websocket is closed. reconnect...\n`;
-          if (e.reason) { output += `! ${e.reason}\n`; }
-          m.redraw();
-          setTimeout(() => {
-            wsconnect();
-          }, 3000);
-        };
-
-        socket.onerror = (e) => {
-          state = "ERROR";
-          if (e.message) { output += `! ${e.message}\n`; }
-          m.redraw();
-          socket.close();
-        };
-
-      })();
-
-      const scrollOutput = () => {
-        $("#opre").scrollTo({
-          top: $("#opre").scrollHeight,
-          behavior: "smooth",
-        });
-      };
-
-      const oninit = () => {
-        state = "INIT";
-      };
-
-      const view = () => {
-        return m("main", [
-          m("svg", {
-            width: "1320px",
-            height: "96px",
-            viewBox: "-440 -32 880 64",
-            version: "1.1",
-            xmlns: "http://www.w3.org/2000/svg",
-            "xmlns:svg": "http://www.w3.org/2000/svg",
-          }, [
-            m("svg:rect", {
-              width: "1000",
-              height: "52",
-              style: "stroke-width:5;stroke:#000;fill:none;",
-              transform: "matrix(0.8,0,0,1,-400,-26)",
-            }),
-            m("svg:rect", {
-              width: black_width,
-              height: "52",
-              style: "stroke-width:0;fill:#66f;",
-              transform: "matrix(0.8,0,0,1,-400,-26)",
-            }),
-            m("svg:rect", {
-              width: white_width,
-              height: "52",
-              style: "stroke-width:0;fill:#f66;",
-              transform: "matrix(-0.8,0,0,1,400,-26)",
-            }),
-            m("svg:g", {
-              style: "font-style:normal;font-weight:400;font-size:26px;line-height:1;font-family:'Rubik','Dela Gothic One',sans-serif;letter-spacing:0;word-spacing:0;fill-opacity:1;dominant-baseline:central;",
-            }, [
-              m("svg:text", {
-                style: "stroke:#000;fill:#fff;stroke-width:1.5;text-align:center;text-anchor:middle;",
-              }, [
-                m("svg:tspan", { x: "0", y: "-13" }, text_c1),
-                m("svg:tspan", { x: "0", y: "13" }, text_c2),
-              ]),
-              m("svg:text", {
-                transform: "matrix(0,-1,1,0,-418,0)",
-                style: "stroke:#fff;fill:#008;stroke-width:1.2;text-align:center;text-anchor:middle;",
-              }, text_b0),
-              m("svg:text", {
-                transform: "matrix(0,1,-1,0,418,0)",
-                style: "stroke:#fff;fill:#800;stroke-width:1.2;text-align:center;text-anchor:middle;",
-              }, text_w0),
-              m("svg:text", {
-                style: "stroke:#fff;fill:#008;stroke-width:1.2;text-align:left;text-anchor:start;",
-              }, [
-                m("svg:tspan", { x: "-380", y: "-13" }, text_b1),
-                m("svg:tspan", { x: "-380", y: "13" }, text_b2),
-              ]),
-              m("svg:text", {
-                style: "stroke:#fff;fill:#800;stroke-width:1.2;text-align:right;text-anchor:end;",
-              }, [
-                m("svg:tspan", { x: "380", y: "-13" }, text_w1),
-                m("svg:tspan", { x: "380", y: "13" }, text_w2),
-              ]),
-            ]),
-          ]),
-          m("div#pv", { onupdate: scrollOutput }, m("pre#pvpre", pvoutput)),
-          m("div#output", { onupdate: scrollOutput }, m("pre#opre", output)),
-        ])
-      };
-
-      return { oninit, view };
+        m.redraw();
+      }
     };
-  m.mount($("#root"), App);
 
-  </script>
+    socket.onopen = () => {
+      state = "CONNECTED";
+      omitoutput();
+      output += `## ${new Date()} : websocket is connected.\n`;
+      text_c1 = name_engine;
+      text_c2 = "";
+      text_b0 = usi_turnblack ? name_turn : "";
+      text_b1 = "";
+      text_b2 = name_black;
+      text_w0 = usi_turnblack ? "" : name_turn;
+      text_w1 = "";
+      text_w2 = name_white;
+      m.redraw();
+    }
+
+    socket.onclose = (e) => {
+      state = "DISCONNECTED";
+      omitoutput();
+      output += `## ${new Date()} : websocket is closed. reconnect...\n`;
+      if (e.reason) { output += `! ${e.reason}\n`; }
+      m.redraw();
+      setTimeout(() => {
+        wsconnect();
+      }, 3000);
+    };
+
+    socket.onerror = (e) => {
+      state = "ERROR";
+      if (e.message) { output += `! ${e.message}\n`; }
+      m.redraw();
+      socket.close();
+    };
+
+  })();
+
+  const scrollOutput = () => {
+    $("#opre").scrollTo({
+      top: $("#opre").scrollHeight,
+      behavior: "smooth",
+    });
+  };
+
+  const oninit = () => {
+    state = "INIT";
+  };
+
+  const view = () => {
+    return m("main", [
+      m("svg", {
+        width: "1320px",
+        height: "96px",
+        viewBox: "-440 -32 880 64",
+        version: "1.1",
+        xmlns: "http://www.w3.org/2000/svg",
+        "xmlns:svg": "http://www.w3.org/2000/svg",
+      }, [
+        m("svg:rect", {
+          width: "1000",
+          height: "52",
+          style: "stroke-width:5;stroke:#000;fill:none;",
+          transform: "matrix(0.8,0,0,1,-400,-26)",
+        }),
+        m("svg:rect", {
+          width: black_width,
+          height: "52",
+          style: "stroke-width:0;fill:#66f;",
+          transform: "matrix(0.8,0,0,1,-400,-26)",
+        }),
+        m("svg:rect", {
+          width: white_width,
+          height: "52",
+          style: "stroke-width:0;fill:#f66;",
+          transform: "matrix(-0.8,0,0,1,400,-26)",
+        }),
+        m("svg:g", {
+          style: "font-style:normal;font-weight:400;font-size:26px;line-height:1;font-family:'Rubik','Dela Gothic One',sans-serif;letter-spacing:0;word-spacing:0;fill-opacity:1;dominant-baseline:central;",
+        }, [
+          m("svg:text", {
+            style: "stroke:#000;fill:#fff;stroke-width:1.5;text-align:center;text-anchor:middle;",
+          }, [
+            m("svg:tspan", { x: "0", y: "-13" }, text_c1),
+            m("svg:tspan", { x: "0", y: "13" }, text_c2),
+          ]),
+          m("svg:text", {
+            transform: "matrix(0,-1,1,0,-418,0)",
+            style: "stroke:#fff;fill:#008;stroke-width:1.2;text-align:center;text-anchor:middle;",
+          }, text_b0),
+          m("svg:text", {
+            transform: "matrix(0,1,-1,0,418,0)",
+            style: "stroke:#fff;fill:#800;stroke-width:1.2;text-align:center;text-anchor:middle;",
+          }, text_w0),
+          m("svg:text", {
+            style: "stroke:#fff;fill:#008;stroke-width:1.2;text-align:left;text-anchor:start;",
+          }, [
+            m("svg:tspan", { x: "-380", y: "-13" }, text_b1),
+            m("svg:tspan", { x: "-380", y: "13" }, text_b2),
+          ]),
+          m("svg:text", {
+            style: "stroke:#fff;fill:#800;stroke-width:1.2;text-align:right;text-anchor:end;",
+          }, [
+            m("svg:tspan", { x: "380", y: "-13" }, text_w1),
+            m("svg:tspan", { x: "380", y: "13" }, text_w2),
+          ]),
+        ]),
+      ]),
+      m("div#pv", { onupdate: scrollOutput }, m("pre#pvpre", pvoutput)),
+      m("div#output", { onupdate: scrollOutput }, m("pre#opre", output)),
+    ])
+  };
+
+  return { oninit, view };
+};
+m.mount($("#root"), App);
+
+</script>
 </body>
 </html>
