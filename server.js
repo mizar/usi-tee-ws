@@ -51,6 +51,9 @@ const cors = function(req, res, next) {
     next()
   }
 }
+function heartbeat() {
+  this.isAlive = true;
+}
 app.use(cors)
 app.use("/", expressStaticGzip("./public/", {
   enableBrotli: true,
@@ -68,6 +71,8 @@ app.use("/mithril.min.js", express.static(__dirname + "/node_modules/mithril/mit
 app.ws("/usi.ws", (ws, _req) => {
   wsConnects.push(ws);
   console.log("ws connect detected");
+  ws.isAlive = true;
+  ws.on("pong", heartbeat);
   ws.on("message", (message) => {
     switch (message.toString()) {
       case "hello":
@@ -112,6 +117,16 @@ app.ws("/usi.ws", (ws, _req) => {
 const server = app.listen(args.port, () => {
   console.log(`http://localhost:${args.port}/`);
 });
+
+// client alive check
+
+const interval = setInterval(function ping() {
+  wsConnects.forEach(function each(ws) {
+    if (ws.isAlive === false) return ws.terminate();
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 30000);
 
 // spawn usi engine
 
@@ -175,6 +190,7 @@ rl_main.on("line", (line) => {
     usie_bestmove = null;
   }
   if (line.startsWith("quit")) {
+    clearInterval(interval);
     server.close();
     subproc.close();
     exit();
@@ -219,11 +235,14 @@ rl_subp.on("line", (line) => {
 // When the pipe is closed, terminate the server, sub-process, and current process.
 
 rl_main.on("close", () => {
+  clearInterval(interval);
   server.close();
   subproc.close();
   exit();
 });
 rl_subp.on("close", () => {
+  clearInterval(interval);
   server.close();
   exit();
 });
+
