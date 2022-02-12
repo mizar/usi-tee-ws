@@ -29,10 +29,6 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
     background-color: rgba(255, 255, 255, 0);
   }
 
-  #root {
-    font-family: "Rubik", "Noto Sans JP", sans-serif;
-  }
-
   main {
     height: 100%;
     display: flex;
@@ -51,14 +47,8 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
   }
 
   #pvpre, #opre {
-    background: rgba(255, 255, 255, 0.7);
     width: 100%;
     height: 100%;
-    overflow: scroll;
-    padding: 8px;
-    border: 1px solid #ddd;
-    box-shadow: inset 1px 1px 2px #eee;
-    font-family: "Roboto Mono", "Noto Sans JP", monospace;
   }
 
 </style>
@@ -451,7 +441,7 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
                           }
                           console.error(e);
                         }
-                        if (infoobj.multipv > 0 && infoobj.score) {
+                        if (infoobj.multipv > 0) {
                           let p_turnblack = (infoobj.turnblack !== (infoobj.ponder && !infoobj.stochastic));
                           const stype = infoobj.score[0];
                           const svalue = infoobj.score[1];
@@ -593,69 +583,7 @@ href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9z
         state = "INIT";
       };
 
-      const view = () => {
-        return m("main", [
-          m("svg", {
-            width: "880px",
-            height: "96px",
-            viewBox: "-440 -48 880 96",
-            version: "1.1",
-            xmlns: "http://www.w3.org/2000/svg",
-            "xmlns:svg": "http://www.w3.org/2000/svg",
-          }, [
-            m("svg:rect", {
-              width: "1000",
-              height: "52",
-              style: "stroke-width:5;stroke:#000;fill:none;",
-              transform: "matrix(0.8,0,0,1,-400,-26)",
-            }),
-            m("svg:rect", {
-              width: black_width,
-              height: "52",
-              style: "stroke-width:0;fill:#66f;",
-              transform: "matrix(0.8,0,0,1,-400,-26)",
-            }),
-            m("svg:rect", {
-              width: white_width,
-              height: "52",
-              style: "stroke-width:0;fill:#f66;",
-              transform: "matrix(-0.8,0,0,1,400,-26)",
-            }),
-            m("svg:g", {
-              style: "font-style:normal;font-weight:400;font-size:26px;line-height:1;font-family:'Rubik','Dela Gothic One',sans-serif;letter-spacing:0;word-spacing:0;fill-opacity:1;dominant-baseline:central;",
-            }, [
-              m("svg:text", {
-                style: "stroke:#000;fill:#fff;stroke-width:1.5;text-align:center;text-anchor:middle;",
-              }, [
-                m("svg:tspan", { x: "0", y: "-13" }, text_c1),
-                m("svg:tspan", { x: "0", y: "13" }, text_c2),
-              ]),
-              m("svg:text", {
-                transform: "matrix(0,-1,1,0,-418,0)",
-                style: "stroke:#fff;fill:#008;stroke-width:1.2;text-align:center;text-anchor:middle;",
-              }, text_b0),
-              m("svg:text", {
-                transform: "matrix(0,1,-1,0,418,0)",
-                style: "stroke:#fff;fill:#800;stroke-width:1.2;text-align:center;text-anchor:middle;",
-              }, text_w0),
-              m("svg:text", {
-                style: "stroke:#fff;fill:#008;stroke-width:1.2;text-align:left;text-anchor:start;",
-              }, [
-                m("svg:tspan", { x: "-380", y: "-13" }, text_b1),
-                m("svg:tspan", { x: "-380", y: "13" }, text_b2),
-              ]),
-              m("svg:text", {
-                style: "stroke:#fff;fill:#800;stroke-width:1.2;text-align:right;text-anchor:end;",
-              }, [
-                m("svg:tspan", { x: "380", y: "-13" }, text_w1),
-                m("svg:tspan", { x: "380", y: "13" }, text_w2),
-              ]),
-            ]),
-          ]),
-          m("div#pv", { onupdate: scrollOutput }, m("pre#pvpre", pvoutput)),
-          m("div#output", { onupdate: scrollOutput }, m("pre#opre", output)),
-        ])
-      };
+      const view = () => m("pre#pvpre", pvoutput);
 
       return { oninit, view };
     };
