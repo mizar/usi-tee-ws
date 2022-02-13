@@ -86,23 +86,23 @@ app.ws("/usi.ws", (ws, _req) => {
   });
   try {
     if (ws.readyState === ws.OPEN) {
-      ws.send(JSON.stringify({ sender: "cache", d: usi_position }));
+      ws.send(JSON.stringify({ sender: "cache_ui", d: usi_position }));
       if (usi_go) {
-        ws.send(JSON.stringify({ sender: "cache", d: usi_go }));
+        ws.send(JSON.stringify({ sender: "cache_ui", d: usi_go }));
       }
       if (usi_ponderhit) {
-        ws.send(JSON.stringify({ sender: "cache", d: usi_ponderhit }));
+        ws.send(JSON.stringify({ sender: "cache_ui", d: usi_ponderhit }));
       }
       if (usi_stop) {
-        ws.send(JSON.stringify({ sender: "cache", d: usi_stop }));
+        ws.send(JSON.stringify({ sender: "cache_ui", d: usi_stop }));
       }
       for (let i = 0; i < usie_info.length; i++) {
         if (usie_info[i]) {
-          ws.send(JSON.stringify({ sender: "cachee", d: usie_info[i] }));
+          ws.send(JSON.stringify({ sender: "cache_engine", d: usie_info[i] }));
         }
       }
       if (usie_bestmove) {
-        ws.send(JSON.stringify({ sender: "cachee", d: usie_bestmove }));
+        ws.send(JSON.stringify({ sender: "cache_engine", d: usie_bestmove }));
       }
     }
   } catch (e) {
@@ -179,6 +179,9 @@ rl_main.on("line", (line) => {
     usi_ponderhit = line;
   }
   if (line.startsWith("stop")) {
+    usi_stop = line;
+  }
+  if (line.startsWith("gameover")) {
     usi_stop = line;
   }
   if (line.startsWith("isready")) {

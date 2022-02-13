@@ -145,7 +145,7 @@ const App = () => {
   (function wsconnect() {
     const socket = new window.WebSocket(address);
 
-    socket.onmessage = (res)=> {
+    socket.onmessage = (res) => {
       if (typeof res.data === 'string') {
         if (res.data.startsWith("{")) {
           try {
@@ -153,6 +153,7 @@ const App = () => {
             const cmds = obj.d.split(" ");
             let cmdi = 0;
             switch (obj.sender) {
+              case "cache_ui":
               case "cache":
               case "ui":
                 switch(cmds[0]) {
@@ -244,6 +245,7 @@ const App = () => {
                 output += `>> ${obj.d}\n`;
                 m.redraw();
                 break;
+              case "cache_engine":
               case "cachee":
               case "engine":
                 if (obj.sender === 'cachee') { output += "# "; }
@@ -312,6 +314,7 @@ const App = () => {
                                   poshis.push(opos.toSFENString());
                                 }
                               }
+                              poscmds.length = 0;
                               const tryparse = (_i, _is_ponder, _is_stochastic) => {
                                 try {
                                   opos.initializeFromSFENString(poshis[poshis.length - (_is_ponder ? 2 : 1)]);
@@ -391,6 +394,7 @@ const App = () => {
                                 }
                               }
                               i = cmds.length;
+                              poshis.length = 0;
                             }
                             break;
                           case "string":
@@ -515,7 +519,7 @@ const App = () => {
                       }
                       m.redraw();
                     }
-                    if (infoobj.multipv > 0) {
+                    if (infoobj.multipv > 0 && infoobj.score) {
                       pvarray[infoobj.multipv] = infoobj;
                       const sobj = pvarray.filter(e => e).map(e => ({
                         "multipv": String(e.multipv),
@@ -533,6 +537,7 @@ const App = () => {
                 }
                 break;
             }
+            cmds.length = 0;
           } catch(e) {
             console.error(e);
           }
