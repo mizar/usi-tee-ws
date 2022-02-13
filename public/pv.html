@@ -343,7 +343,7 @@ const App = () => {
                                   }
                                   return jkfplayer.getReadableKifuState().slice(1).map(e => e.kifu.replace(/\s/g, "")).join("");
                                 } catch (_) {
-                                  console.error(`pv_tryparse fail: ${_is_ponder}, ${_is_stochastic}`);
+                                  //console.error(`pv_tryparse fail: ${_is_ponder}, ${_is_stochastic}`);
                                   return null;
                                 }
                               };
