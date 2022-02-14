@@ -1,14 +1,14 @@
-#!/usr/bin/env node
-'use strict';
-const { ArgumentParser, REMAINDER } = require("argparse");
+#!/usr/bin/env ts-node
+import { ArgumentParser, REMAINDER } from "argparse";
+import { spawn } from "child_process";
+import { createInterface } from "readline";
+import { exit } from "process";
+import express from "express";
+import expressStaticGzip from "express-static-gzip";
+import expressWs from "express-ws";
+import * as ws from 'ws';
 const { version } = require("./package.json");
-const { spawn } = require("child_process");
-const { createInterface } = require("readline");
-const { exit } = require("process");
-const express = require("express");
-const app = express();
-const expressStaticGzip = require("express-static-gzip");
-const expressWs = require("express-ws")(app);
+const { app, getWss, applyTo } = expressWs(express());
 
 // argument parse
 
@@ -29,17 +29,20 @@ console.dir(args);
 
 const POS_HIRATE = "position startpos";
 let usi_position = POS_HIRATE;
-let usi_go = null;
-let usi_ponderhit = null;
-let usi_stop = null;
-let usie_info = [];
-let usie_bestmove = null;
+let usi_go: string | null = null;
+let usi_ponderhit: string | null = null;
+let usi_stop: string | null = null;
+let usie_info: string[] = [];
+let usie_bestmove: string | null = null;
 
 // http/ws server
 
-let wsConnects = [];
+interface WsIsAlive {
+  isAlive: boolean;
+}
+let wsConnects: (ws & WsIsAlive)[] = [];
 
-const cors = function(req, res, next) {
+app.use(function(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*')
   res.header('Cross-Origin-Embedder-Policy', 'require-corp');
   res.header('Cross-Origin-Opener-Policy', 'same-origin');
@@ -50,11 +53,7 @@ const cors = function(req, res, next) {
   } else {
     next()
   }
-}
-function heartbeat() {
-  this.isAlive = true;
-}
-app.use(cors)
+});
 app.use("/", expressStaticGzip("./public/", {
   enableBrotli: true,
   orderPreference: ['br']
@@ -69,10 +68,12 @@ app.use("/yaneuraou.k-p/", expressStaticGzip("./node_modules/@mizarjp/yaneuraou.
 }));
 app.use("/mithril.min.js", express.static(__dirname + "/node_modules/mithril/mithril.min.js"));
 app.ws("/usi.ws", (ws, _req) => {
-  wsConnects.push(ws);
+  wsConnects.push(ws as unknown as ws & WsIsAlive);
   console.log("ws connect detected");
-  ws.isAlive = true;
-  ws.on("pong", heartbeat);
+  (ws as unknown as ws & WsIsAlive).isAlive = true;
+  ws.on("pong", function() {
+    (this as unknown as ws & WsIsAlive).isAlive = true;
+  });
   ws.on("message", (message) => {
     switch (message.toString()) {
       case "hello":
@@ -108,7 +109,7 @@ app.ws("/usi.ws", (ws, _req) => {
   } catch (e) {
     console.error(e);
     try {
-      ws.close();
+      ws.terminate();
     } catch (e) {
       console.error(e);
     }
@@ -135,7 +136,7 @@ const subproc = spawn(args.engine, args.engineargs, { cwd: args.cwd });
 process.stdin.setEncoding("utf8");
 process.stdout.setEncoding("utf8");
 process.stderr.setEncoding("utf8");
-subproc.stdin.setEncoding("utf8");
+subproc.stdin.setDefaultEncoding("utf8");
 subproc.stdout.setEncoding("utf8");
 subproc.stderr.setEncoding("utf8");
 
@@ -196,7 +197,7 @@ rl_main.on("line", (line) => {
     clearInterval(interval);
     setTimeout(() => {
       server.close();
-      subproc.close();
+      subproc.kill();
       exit();
     }, 1000);
   }
@@ -220,7 +221,7 @@ rl_subp.on("line", (line) => {
   if (line.startsWith("info")) {
     const found = line.match(/multipv (?<multipv>[0-9]+) /);
     if (found) {
-      usie_info[parseInt(found.groups.multipv)] = line;
+      usie_info[parseInt((found.groups ?? {}).multipv)] = line;
     } else {
       let trline = line;
       const istring = line.indexOf("string");
@@ -242,7 +243,7 @@ rl_subp.on("line", (line) => {
 rl_main.on("close", () => {
   clearInterval(interval);
   server.close();
-  subproc.close();
+  subproc.kill();
   exit();
 });
 rl_subp.on("close", () => {

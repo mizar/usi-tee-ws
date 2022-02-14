@@ -45,7 +45,7 @@ yarn install
 
 ```
 usage:
-server.js [-h] [-v] [-p PORT] [-c CWD] engine ...
+server.ts [-h] [-v] [-p PORT] [-c CWD] engine ...
 ```
 
 - `-h` : 使い方情報の表示
