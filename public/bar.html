@@ -280,7 +280,7 @@ const App = () => {
                                 poscmds[4].match(/^(-|(2?[RBrb]|[2-4]?[GSNLgsnl]|(1[0-8]|[2-9])?[Pp])+)$/) &&
                                 poscmds[5].match(/^[0-9]+$/)) {
                                 pcmdi = 6;
-                                opos.initializeFromSFENString(poscmds[2,3,4,5].join(" "));
+                                opos.initializeFromSFENString([poscmds[2],poscmds[3],poscmds[4],poscmds[5]].join(" "));
                               } else {
                                 throw "Uninterpretable position";
                               }
