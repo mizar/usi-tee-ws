@@ -470,8 +470,8 @@ const App = () => {
                           infoobj.scorestr = [`${s_cp > 0 ? "" : "+"}${-s_cp}`, `${s_cp < 0 ? "" : "+"}${s_cp}`];
                         }
                       } else if (stype === "mate") {
-                        if (svalue === "+" || svalue === "-") {
-                          if ((svalue === "+") === p_turnblack) {
+                        if (svalue === "+" || svalue === "-" || svalue === "+0" || svalue === "-0") {
+                          if ((svalue[0] === "+") === p_turnblack) {
                             infoobj.width = [1000, 0];
                             infoobj.win = [`100%`, `0%`];
                             infoobj.scorestr = [`+M`, `-M`];
@@ -626,27 +626,27 @@ const App = () => {
           style: "font-style:normal;font-weight:400;font-size:26px;line-height:1;font-family:'Rubik','Dela Gothic One',sans-serif;letter-spacing:0;word-spacing:0;fill-opacity:1;dominant-baseline:central;",
         }, [
           m("svg:text", {
-            style: "stroke:#000;fill:#fff;stroke-width:1.5;text-align:center;text-anchor:middle;",
+            style: "stroke:#000;fill:#f0f0ff;stroke-width:1.5;text-align:center;text-anchor:middle;",
           }, [
             m("svg:tspan", { x: "0", y: "-13" }, text_c1),
             m("svg:tspan", { x: "0", y: "13" }, text_c2),
           ]),
           m("svg:text", {
             transform: "matrix(0,-1,1,0,-418,0)",
-            style: "stroke:#fff;fill:#008;stroke-width:1.2;text-align:center;text-anchor:middle;",
+            style: "stroke:#f0f0ff;fill:#008;stroke-width:1.2;text-align:center;text-anchor:middle;",
           }, text_b0),
           m("svg:text", {
             transform: "matrix(0,1,-1,0,418,0)",
-            style: "stroke:#fff;fill:#800;stroke-width:1.2;text-align:center;text-anchor:middle;",
+            style: "stroke:#f0f0ff;fill:#800;stroke-width:1.2;text-align:center;text-anchor:middle;",
           }, text_w0),
           m("svg:text", {
-            style: "stroke:#fff;fill:#008;stroke-width:1.2;text-align:left;text-anchor:start;",
+            style: "stroke:#f0f0ff;fill:#008;stroke-width:1.2;text-align:left;text-anchor:start;",
           }, [
             m("svg:tspan", { x: "-380", y: "-13" }, text_b1),
             m("svg:tspan", { x: "-380", y: "13" }, text_b2),
           ]),
           m("svg:text", {
-            style: "stroke:#fff;fill:#800;stroke-width:1.2;text-align:right;text-anchor:end;",
+            style: "stroke:#f0f0ff;fill:#800;stroke-width:1.2;text-align:right;text-anchor:end;",
           }, [
             m("svg:tspan", { x: "380", y: "-13" }, text_w1),
             m("svg:tspan", { x: "380", y: "13" }, text_w2),

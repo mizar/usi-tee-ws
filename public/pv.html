@@ -443,8 +443,8 @@ const App = () => {
                           infoobj.scorestr = [`${s_cp > 0 ? "" : "+"}${-s_cp}`, `${s_cp < 0 ? "" : "+"}${s_cp}`];
                         }
                       } else if (stype === "mate") {
-                        if (svalue === "+" || svalue === "-") {
-                          if ((svalue === "+") === p_turnblack) {
+                        if (svalue === "+" || svalue === "-" || svalue === "+0" || svalue === "-0") {
+                          if ((svalue[0] === "+") === p_turnblack) {
                             infoobj.width = [1000, 0];
                             infoobj.win = [`100%`, `0%`];
                             infoobj.scorestr = [`+M`, `-M`];
