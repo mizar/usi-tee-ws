@@ -233,7 +233,7 @@ rl_subp.on("line", (line) => {
       }
     }
   }
-  if (line.startsWith("bestmove")) {
+  if (line.startsWith("bestmove") || line.startsWith("checkmate")) {
     usie_bestmove = line;
   }
 });
