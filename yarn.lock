@@ -19,15 +19,15 @@
   resolved "https://registry.yarnpkg.com/@discoveryjs/json-ext/-/json-ext-0.5.6.tgz#d5e0706cf8c6acd8c6032f8d54070af261bbbb2f"
   integrity sha512-ws57AidsDvREKrZKYffXddNkyaF14iHNHm8VQnZH6t99E8gczjNN0GpvcGny0imC80yQ0tHz1xVUKk/KFQSUyA==
 
-"@mizarjp/yaneuraou.halfkp@^7.0.1-alpha.16":
-  version "7.0.1-alpha.16"
-  resolved "https://registry.yarnpkg.com/@mizarjp/yaneuraou.halfkp/-/yaneuraou.halfkp-7.0.1-alpha.16.tgz#084e61f370fc562a1d852133c376d04c02da03a7"
-  integrity sha512-wtqnH0AZp1WvZAmHLxUvLw0luL3N+kCT8miCX0jait8PIP1uNLY0JX6WCzOyV2uYvK2kKQ6le1hoWOH+0pWP6w==
+"@mizarjp/yaneuraou.halfkp@^7.0.1-alpha.25":
+  version "7.0.1-alpha.25"
+  resolved "https://registry.yarnpkg.com/@mizarjp/yaneuraou.halfkp/-/yaneuraou.halfkp-7.0.1-alpha.25.tgz#92c4641438bf2c83f100b31b8d6360b3036c6026"
+  integrity sha512-krrxjWnOLO8xHhKCZyp8h1WYhGIInhX5oJNDEy6CoenQTGhgVw9id6DO1eQdrZBIxYSXSBMN29L7JGeirG1Dew==
 
-"@mizarjp/yaneuraou.k-p@^7.0.1-alpha.16":
-  version "7.0.1-alpha.16"
-  resolved "https://registry.yarnpkg.com/@mizarjp/yaneuraou.k-p/-/yaneuraou.k-p-7.0.1-alpha.16.tgz#b540fe910fd829dd997c599031073d23e3f53c51"
-  integrity sha512-7nNOvpshbVpY4NYGUhFw9xO07MBzFR7IaRNIOs4RBvKHOW0ELG+rgpr1g+/+MxQUFHDHjMgyz+RTL84Dbex1dg==
+"@mizarjp/yaneuraou.k-p@^7.0.1-alpha.25":
+  version "7.0.1-alpha.25"
+  resolved "https://registry.yarnpkg.com/@mizarjp/yaneuraou.k-p/-/yaneuraou.k-p-7.0.1-alpha.25.tgz#6fc0c9646f17fbd745bc6439af9a7c542eb3e048"
+  integrity sha512-ax7LqTRFIXkB7chjLzqvfH8SqfvtD7Mc0j0aKHRsND4kOlKe50i5HQNBa1U1eJP6vYe+G5ygt0jhEQoP/AxOXw==
 
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
@@ -2251,10 +2251,10 @@ toidentifier@1.0.1:
   resolved "https://registry.yarnpkg.com/toidentifier/-/toidentifier-1.0.1.tgz#3be34321a88a820ed1bd80dfaa33e479fbb8dd35"
   integrity sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA==
 
-ts-node@^10.5.0:
-  version "10.6.0"
-  resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-10.6.0.tgz#c3f4195d5173ce3affdc8f2fd2e9a7ac8de5376a"
-  integrity sha512-CJen6+dfOXolxudBQXnVjRVvYTmTWbyz7cn+xq2XTsvnaXbHqr4gXSCNbS2Jj8yTZMuGwUoBESLaOkLascVVvg==
+ts-node@^10.7.0:
+  version "10.7.0"
+  resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-10.7.0.tgz#35d503d0fab3e2baa672a0e94f4b40653c2463f5"
+  integrity sha512-TbIGS4xgJoX2i3do417KSaep1uRAW/Lu+WAL2doDHC0D6ummjirVOXU5/7aiZotbQ5p1Zp9tP7U6cYhA0O7M8A==
   dependencies:
     "@cspotcode/source-map-support" "0.7.0"
     "@tsconfig/node10" "^1.0.7"
