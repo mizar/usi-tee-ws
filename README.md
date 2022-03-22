@@ -31,7 +31,7 @@ Set-ExecutionPolicy RemoteSigned
 
 ### usi-tee-ws 依存パッケージのインストール
 
-このファイルがあるディレクトリにて、以下のコマンドを入力します。もしくは、このディレクトリにある `pkginstall.bat` を実行します。
+このファイルがあるディレクトリにて、以下のコマンドを入力します。もしくは、このディレクトリにある `pkginstall.cmd` を実行します。
 
 ```
 yarn install
@@ -41,7 +41,7 @@ yarn install
 
 起動時には、 ENGINE : USI対応の実行ファイル の指定が必要です。[将棋所](http://shogidokoro.starfree.jp/index.html)・[ShogiGUI](http://shogigui.siganus.com/) などに登録可能な起動ファイル（※）の例は `bin/` ディレクトリ内にありますので、これらのファイルを参考に、各自の環境に合わせて編集してください。
 
-※ [ShogiGUI](http://shogigui.siganus.com/)に `Windows バッチ ファイル (*.bat)` 形式の起動ファイルを用いてエンジンを追加する場合、表示するファイルの種類を `実行ファイル (*.exe)` から `すべてのファイル (*.*)` に変更してから、起動ファイルを選択する必要があります。
+※ [ShogiGUI](http://shogigui.siganus.com/)に `Windows コマンド スクリプト (*.cmd)` 形式の起動ファイルを用いてエンジンを追加する場合、表示するファイルの種類を `実行ファイル (*.exe)` から `すべてのファイル (*.*)` に変更してから、起動ファイルを選択する必要があります。
 
 ```
 usage:
