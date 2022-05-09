@@ -24,15 +24,15 @@
   resolved "https://registry.yarnpkg.com/@leichtgewicht/ip-codec/-/ip-codec-2.0.3.tgz#0300943770e04231041a51bd39f0439b5c7ab4f0"
   integrity sha512-nkalE/f1RvRGChwBnEIoBfSEYOXnCRdleKuv6+lePbMDrMZXeDQnqak5XDOeBgrPPyPfAdcCu/B5z+v3VhplGg==
 
-"@mizarjp/yaneuraou.halfkp@^7.5.0-alpha.2":
-  version "7.5.0-alpha.2"
-  resolved "https://registry.yarnpkg.com/@mizarjp/yaneuraou.halfkp/-/yaneuraou.halfkp-7.5.0-alpha.2.tgz#3b02808ad33ca6474877adeec79b3f46d10b7ebe"
-  integrity sha512-SKzHYzNthAkGy6bllp+JMy17yF5E4k1rHjjWdxZ0fdfW4O5JXnlHyyZsa+XBF0bqOB6G0brlptzD8aQOxT0emg==
+"@mizarjp/yaneuraou.halfkp@^7.5.0-alpha.4":
+  version "7.5.0-alpha.4"
+  resolved "https://registry.yarnpkg.com/@mizarjp/yaneuraou.halfkp/-/yaneuraou.halfkp-7.5.0-alpha.4.tgz#684585bdface71541a3ebffb15c19d3d45e1fbf8"
+  integrity sha512-OE0X+Fv9QzWLUado9odO3uVjn6WKkEeTdW/mJTMLODmgoyivs4Y4Q71UnnTpkduJa7TY2kxwMG+R/nPRCfM2Xg==
 
-"@mizarjp/yaneuraou.k-p@^7.5.0-alpha.2":
-  version "7.5.0-alpha.2"
-  resolved "https://registry.yarnpkg.com/@mizarjp/yaneuraou.k-p/-/yaneuraou.k-p-7.5.0-alpha.2.tgz#df25ab6f1a0875390028d13cd390df235c7bea54"
-  integrity sha512-T8BuisLdEWB0caWoZ9voV9HBHifdJCKv91+Oqh3Dgi4qGqeDlx/hTXMgv14iXRgRvL1IA1xG+ewjyct75mK6Zw==
+"@mizarjp/yaneuraou.k-p@^7.5.0-alpha.4":
+  version "7.5.0-alpha.4"
+  resolved "https://registry.yarnpkg.com/@mizarjp/yaneuraou.k-p/-/yaneuraou.k-p-7.5.0-alpha.4.tgz#96f55b6369b6d86ff6f8d53d5d18ccafeddc0dce"
+  integrity sha512-CyasKfbgXweYUhdjMYQKOiJw90UGPvlEe11wa/V6nUORXfnljLP148tsgbsbUqWM939ukdNWLi8LeOl5xAv0qA==
 
 "@tsconfig/node10@^1.0.7":
   version "1.0.8"
